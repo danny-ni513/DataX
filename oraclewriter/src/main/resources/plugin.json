@@ -1,6 +1,6 @@
 {
-    "name": "oraclewriter",
-    "class": "com.alibaba.datax.plugin.writer.oraclewriter.OracleWriter",
-    "description": "useScene: prod. mechanism: Jdbc connection using the database, execute insert sql. warn: The more you know about the database, the less problems you encounter.",
-    "developer": "alibaba"
+    "name": "oraclewithseqwriter",
+    "class": "ni.danny.datax.plugin.writer.oraclewithseqwriter.OracleWithSeqWriter",
+    "description": "useScene: prod. mechanism: Jdbc connection using the database, execute insert sql. warn: The more you know about the database, the less problems you encounter. Add seq type",
+    "developer": "dannyNi"
 }

@@ -3,6 +3,10 @@
     "parameter": {
         "username": "",
         "password": "",
+        "sequence": {
+            "column":"",
+            "name": ""
+        },
         "column": [],
         "preSql": [],
         "connection": [

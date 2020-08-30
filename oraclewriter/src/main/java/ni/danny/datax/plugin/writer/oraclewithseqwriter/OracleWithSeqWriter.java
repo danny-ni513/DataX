@@ -1,4 +1,4 @@
-package com.alibaba.datax.plugin.writer.oraclewriter;
+package ni.danny.datax.plugin.writer.oraclewithseqwriter;
 
 import com.alibaba.datax.common.exception.DataXException;
 import com.alibaba.datax.common.plugin.RecordReceiver;
@@ -11,7 +11,7 @@ import com.alibaba.datax.plugin.rdbms.writer.Key;
 
 import java.util.List;
 
-public class OracleWriter extends Writer {
+public class OracleWithSeqWriter extends Writer {
 	private static final DataBaseType DATABASE_TYPE = DataBaseType.Oracle;
 
 	public static class Job extends Writer.Job {
