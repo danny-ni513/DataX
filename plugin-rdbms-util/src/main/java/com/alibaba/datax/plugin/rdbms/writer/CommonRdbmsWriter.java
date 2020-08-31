@@ -180,6 +180,7 @@ public class CommonRdbmsWriter {
         protected String username;
         protected String password;
         protected String jdbcUrl;
+        protected String sequence;
         protected String table;
         protected List<String> columns;
         protected List<String> preSqls;
@@ -220,6 +221,10 @@ public class CommonRdbmsWriter {
                 this.username = ss[1].trim() + ":" + this.username;
                 this.jdbcUrl = ss[2];
                 LOG.info("this is ob1_0 jdbc url. user=" + this.username + " :url=" + this.jdbcUrl);
+            }
+
+            if(this.dataBaseType == DataBaseType.Oracle){
+                this.sequence = writerSliceConfig.get(Key.SEQUENCE,String.class);
             }
 
             this.table = writerSliceConfig.getString(Key.TABLE);
@@ -273,7 +278,12 @@ public class CommonRdbmsWriter {
             try {
                 Record record;
                 while ((record = recordReceiver.getFromReader()) != null) {
-                    if (record.getColumnNumber() != this.columnNumber) {
+                    int recordColumnNumber = record.getColumnNumber();
+                    if(!this.sequence.isEmpty()){
+                        //如果存在自增序列配置，则读到的字段数在最后一列增加为序列器
+                        recordColumnNumber = recordColumnNumber+1;
+                    }
+                     if ( recordColumnNumber != this.columnNumber) {
                         // 源头读取字段列数与目的表字段写入列数不相等，直接报错
                         throw DataXException
                                 .asDataXException(
@@ -548,6 +558,9 @@ public class CommonRdbmsWriter {
                 for (int i = 0; i < columns.size(); i++) {
                     String type = resultSetMetaData.getRight().get(i);
                     valueHolders.add(calcValueHolder(type));
+                }
+                if(!this.sequence.isEmpty()){
+                    valueHolders.set(0,this.sequence+".nextval");
                 }
 
                 boolean forceUseUpdate = false;

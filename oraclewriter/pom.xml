@@ -6,8 +6,8 @@
 		<artifactId>datax-all</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>oraclewriter</artifactId>
-	<name>oraclewriter</name>
+	<artifactId>oraclewithseqwriter</artifactId>
+	<name>oraclewithseqwriter</name>
 	<packaging>jar</packaging>
 	<description>writer data into oracle database</description>
 

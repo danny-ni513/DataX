@@ -1,6 +1,6 @@
 {
     "name": "oraclewithseqwriter",
     "class": "ni.danny.datax.plugin.writer.oraclewithseqwriter.OracleWithSeqWriter",
-    "description": "useScene: prod. mechanism: Jdbc connection using the database, execute insert sql. warn: The more you know about the database, the less problems you encounter. Add seq type",
+    "description": "column[0]必须为序列器所使用的字段",
     "developer": "dannyNi"
 }

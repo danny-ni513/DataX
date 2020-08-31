@@ -14,6 +14,11 @@ public final class Key {
     //可选值为：insert,replace，默认为 insert （mysql 支持，oracle 没用 replace 机制，只能 insert,oracle 可以不暴露这个参数）
     public final static String WRITE_MODE = "writeMode";
 
+    //只支持oracle-sequence
+    public final static String SEQUENCE="sequence";
+
+
+
     public final static String PRE_SQL = "preSql";
 
     public final static String POST_SQL = "postSql";
