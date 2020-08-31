@@ -153,6 +153,12 @@ public final class OriginalConfPretreatmentUtil {
         for (int i = 0; i < columns.size(); i++) {
             valueHolders.add("?");
         }
+        LOG.info("seq ====>  [{}]",originalConfig.get(Key.SEQUENCE));
+        String seqStr = "";
+        if(originalConfig.get(Key.SEQUENCE)!=null&&!originalConfig.getString(Key.SEQUENCE).isEmpty()){
+            seqStr = originalConfig.getString(Key.SEQUENCE)+".nextval";
+            valueHolders.set(0,seqStr);
+        }
 
         boolean forceUseUpdate = false;
         //ob10的处理

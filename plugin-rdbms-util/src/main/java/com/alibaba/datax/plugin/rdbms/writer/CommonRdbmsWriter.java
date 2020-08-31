@@ -410,9 +410,14 @@ public class CommonRdbmsWriter {
         // 直接使用了两个类变量：columnNumber,resultSetMetaData
         protected PreparedStatement fillPreparedStatement(PreparedStatement preparedStatement, Record record)
                 throws SQLException {
-            for (int i = 0; i < this.columnNumber; i++) {
-                int columnSqltype = this.resultSetMetaData.getMiddle().get(i);
-                preparedStatement = fillPreparedStatementColumnType(preparedStatement, i, columnSqltype, record.getColumn(i));
+            int tmpColumnNumber = this.columnNumber;
+            if(!this.sequence.isEmpty()){
+                tmpColumnNumber = tmpColumnNumber-1;
+            }
+            for (int i = 0; i < tmpColumnNumber; i++) {
+                int columnSqlType = this.resultSetMetaData.getMiddle().get(i);
+                LOG.info("i=[{}}],columnSqlType=[{}],record=[{}}]",i,columnSqlType,record.toString());
+                preparedStatement = fillPreparedStatementColumnType(preparedStatement, i, columnSqlType, record.getColumn(i));
             }
 
             return preparedStatement;
