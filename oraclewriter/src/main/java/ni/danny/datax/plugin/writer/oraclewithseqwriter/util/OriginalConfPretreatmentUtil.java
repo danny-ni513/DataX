@@ -1,4 +1,4 @@
-package com.alibaba.datax.plugin.rdbms.writer.util;
+package ni.danny.datax.plugin.writer.oraclewithseqwriter.util;
 
 import com.alibaba.datax.common.exception.DataXException;
 import com.alibaba.datax.common.util.Configuration;
@@ -6,6 +6,7 @@ import com.alibaba.datax.common.util.ListUtil;
 import com.alibaba.datax.plugin.rdbms.util.*;
 import com.alibaba.datax.plugin.rdbms.writer.Constant;
 import com.alibaba.datax.plugin.rdbms.writer.Key;
+import com.alibaba.datax.plugin.rdbms.writer.util.WriterUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,6 +154,13 @@ public final class OriginalConfPretreatmentUtil {
         for (int i = 0; i < columns.size(); i++) {
             valueHolders.add("?");
         }
+        LOG.info("seq ====>  [{}]",originalConfig.get(Key.SEQUENCE_NAME));
+        String seqStr = "";
+        if(originalConfig.get(Key.SEQUENCE_NAME)!=null&&!originalConfig.getString(Key.SEQUENCE_NAME).isEmpty()){
+            seqStr = originalConfig.getString(Key.SEQUENCE_NAME)+".nextval";
+            int seqIndex = originalConfig.getInt(Key.SEQUENCE_INDEX,0);
+            valueHolders.set(seqIndex,seqStr);
+        }
 
         boolean forceUseUpdate = false;
         //ob10的处理
@@ -169,8 +177,8 @@ public final class OriginalConfPretreatmentUtil {
 
     public static boolean isOB10(String jdbcUrl) {
         //ob10的处理
-        if (jdbcUrl.startsWith(com.alibaba.datax.plugin.rdbms.writer.Constant.OB10_SPLIT_STRING)) {
-            String[] ss = jdbcUrl.split(com.alibaba.datax.plugin.rdbms.writer.Constant.OB10_SPLIT_STRING_PATTERN);
+        if (jdbcUrl.startsWith(Constant.OB10_SPLIT_STRING)) {
+            String[] ss = jdbcUrl.split(Constant.OB10_SPLIT_STRING_PATTERN);
             if (ss.length != 3) {
                 throw DataXException
                         .asDataXException(

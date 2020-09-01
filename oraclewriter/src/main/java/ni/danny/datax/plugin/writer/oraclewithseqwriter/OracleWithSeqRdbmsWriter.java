@@ -1,4 +1,4 @@
-package com.alibaba.datax.plugin.rdbms.writer;
+package ni.danny.datax.plugin.writer.oraclewithseqwriter;
 
 import com.alibaba.datax.common.element.Column;
 import com.alibaba.datax.common.element.Record;
@@ -10,8 +10,10 @@ import com.alibaba.datax.plugin.rdbms.util.DBUtil;
 import com.alibaba.datax.plugin.rdbms.util.DBUtilErrorCode;
 import com.alibaba.datax.plugin.rdbms.util.DataBaseType;
 import com.alibaba.datax.plugin.rdbms.util.RdbmsException;
-import com.alibaba.datax.plugin.rdbms.writer.util.OriginalConfPretreatmentUtil;
+import com.alibaba.datax.plugin.rdbms.writer.Constant;
+import com.alibaba.datax.plugin.rdbms.writer.Key;
 import com.alibaba.datax.plugin.rdbms.writer.util.WriterUtil;
+import ni.danny.datax.plugin.writer.oraclewithseqwriter.util.OriginalConfPretreatmentUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
@@ -24,7 +26,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CommonRdbmsWriter {
+public class OracleWithSeqRdbmsWriter {
 
     public static class Job {
         private DataBaseType dataBaseType;
@@ -180,6 +182,8 @@ public class CommonRdbmsWriter {
         protected String username;
         protected String password;
         protected String jdbcUrl;
+        protected String sequenceName;
+        protected int sequenceIndex=0;
         protected String table;
         protected List<String> columns;
         protected List<String> preSqls;
@@ -222,6 +226,11 @@ public class CommonRdbmsWriter {
                 LOG.info("this is ob1_0 jdbc url. user=" + this.username + " :url=" + this.jdbcUrl);
             }
 
+            if(this.dataBaseType == DataBaseType.Oracle){
+                this.sequenceName = writerSliceConfig.get(Key.SEQUENCE_NAME,String.class);
+                this.sequenceIndex = writerSliceConfig.get(Key.SEQUENCE_INDEX,Integer.class);
+
+            }
 
             this.table = writerSliceConfig.getString(Key.TABLE);
 
@@ -275,6 +284,10 @@ public class CommonRdbmsWriter {
                 Record record;
                 while ((record = recordReceiver.getFromReader()) != null) {
                     int recordColumnNumber = record.getColumnNumber();
+                    if(!this.sequenceName.isEmpty()){
+                        //如果存在自增序列配置，则读到的字段数在最后一列增加为序列器
+                        recordColumnNumber = recordColumnNumber+1;
+                    }
                      if ( recordColumnNumber != this.columnNumber) {
                         // 源头读取字段列数与目的表字段写入列数不相等，直接报错
                         throw DataXException
@@ -403,6 +416,9 @@ public class CommonRdbmsWriter {
         protected PreparedStatement fillPreparedStatement(PreparedStatement preparedStatement, Record record)
                 throws SQLException {
             int tmpColumnNumber = this.columnNumber;
+            if(!this.sequenceName.isEmpty()){
+                tmpColumnNumber = tmpColumnNumber-1;
+            }
             for (int i = 0; i < tmpColumnNumber; i++) {
                 int columnSqlType = this.resultSetMetaData.getMiddle().get(i);
                 LOG.info("i=[{}}],columnSqlType=[{}],record=[{}}]",i,columnSqlType,record.toString());
@@ -553,6 +569,10 @@ public class CommonRdbmsWriter {
                     String type = resultSetMetaData.getRight().get(i);
                     valueHolders.add(calcValueHolder(type));
                 }
+//                if(!this.sequence.isEmpty()){
+//                    valueHolders.set(0,this.sequence+".nextval");
+//                }
+
                 boolean forceUseUpdate = false;
                 //ob10的处理
                 if (dataBaseType != null && dataBaseType == DataBaseType.MySql && OriginalConfPretreatmentUtil.isOB10(jdbcUrl)) {

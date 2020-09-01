@@ -15,8 +15,9 @@ public final class Key {
     public final static String WRITE_MODE = "writeMode";
 
     //只支持oracle-sequence
-    public final static String SEQUENCE="sequence";
-
+    public final static String SEQUENCE_NAME="sequence.name";
+    public final static String SEQUENCE_INDEX="sequence.index";
+    public final static String SEQUENCE_COLUMN="sequence.column";
 
 
     public final static String PRE_SQL = "preSql";

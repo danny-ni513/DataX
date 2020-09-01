@@ -6,7 +6,6 @@ import com.alibaba.datax.common.spi.Writer;
 import com.alibaba.datax.common.util.Configuration;
 import com.alibaba.datax.plugin.rdbms.util.DBUtilErrorCode;
 import com.alibaba.datax.plugin.rdbms.util.DataBaseType;
-import com.alibaba.datax.plugin.rdbms.writer.CommonRdbmsWriter;
 import com.alibaba.datax.plugin.rdbms.writer.Key;
 
 import java.util.List;
@@ -16,7 +15,7 @@ public class OracleWithSeqWriter extends Writer {
 
 	public static class Job extends Writer.Job {
 		private Configuration originalConfig = null;
-		private CommonRdbmsWriter.Job commonRdbmsWriterJob;
+		private OracleWithSeqRdbmsWriter.Job commonRdbmsWriterJob;
 
 		public void preCheck() {
             this.init();
@@ -38,7 +37,7 @@ public class OracleWithSeqWriter extends Writer {
 										writeMode));
 			}
 
-			this.commonRdbmsWriterJob = new CommonRdbmsWriter.Job(
+			this.commonRdbmsWriterJob = new OracleWithSeqRdbmsWriter.Job(
 					DATABASE_TYPE);
 			this.commonRdbmsWriterJob.init(this.originalConfig);
 		}
@@ -70,12 +69,12 @@ public class OracleWithSeqWriter extends Writer {
 
 	public static class Task extends Writer.Task {
 		private Configuration writerSliceConfig;
-		private CommonRdbmsWriter.Task commonRdbmsWriterTask;
+		private OracleWithSeqRdbmsWriter.Task commonRdbmsWriterTask;
 
 		@Override
 		public void init() {
 			this.writerSliceConfig = super.getPluginJobConf();
-			this.commonRdbmsWriterTask = new CommonRdbmsWriter.Task(DATABASE_TYPE);
+			this.commonRdbmsWriterTask = new OracleWithSeqRdbmsWriter.Task(DATABASE_TYPE);
 			this.commonRdbmsWriterTask.init(this.writerSliceConfig);
 		}
 
