@@ -5,8 +5,12 @@ import com.alibaba.datax.common.plugin.RecordSender;
 import com.alibaba.datax.common.spi.Reader;
 import com.alibaba.datax.common.statistics.PerfRecord;
 import com.alibaba.datax.core.statistics.communication.CommunicationTool;
+import com.alipay.common.tracer.core.context.trace.SofaTraceContext;
+import com.alipay.common.tracer.core.holder.SofaTraceContextHolder;
+import com.alipay.common.tracer.core.span.SofaTracerSpan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * Created by jingxing on 14-9-1.
@@ -31,6 +35,12 @@ public class ReaderRunner extends AbstractRunner implements Runnable {
     @Override
     public void run() {
         assert null != this.recordSender;
+
+        MDC.remove("DATAX-JOBID");
+        SofaTraceContext sofaTraceContext = SofaTraceContextHolder.getSofaTraceContext();
+        SofaTracerSpan sofaTracerSpan = sofaTraceContext.getCurrentSpan();
+        String dataxJobid = sofaTracerSpan.getBaggageItem("DATAX-JOBID");
+        MDC.put("DATAX-JOBID",dataxJobid);
 
         Reader.Task taskReader = (Reader.Task) this.getPlugin();
 

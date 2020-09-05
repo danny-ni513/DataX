@@ -5,9 +5,13 @@ import com.alibaba.datax.common.plugin.RecordReceiver;
 import com.alibaba.datax.common.spi.Writer;
 import com.alibaba.datax.common.statistics.PerfRecord;
 import com.alibaba.datax.core.statistics.communication.CommunicationTool;
+import com.alipay.common.tracer.core.context.trace.SofaTraceContext;
+import com.alipay.common.tracer.core.holder.SofaTraceContextHolder;
+import com.alipay.common.tracer.core.span.SofaTracerSpan;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * Created by jingxing on 14-9-1.
@@ -32,7 +36,11 @@ public class WriterRunner extends AbstractRunner implements Runnable {
     @Override
     public void run() {
         Validate.isTrue(this.recordReceiver != null);
-
+        MDC.remove("DATAX-JOBID");
+        SofaTraceContext sofaTraceContext = SofaTraceContextHolder.getSofaTraceContext();
+        SofaTracerSpan sofaTracerSpan = sofaTraceContext.getCurrentSpan();
+        String dataxJobid = sofaTracerSpan.getBaggageItem("DATAX-JOBID");
+        MDC.put("DATAX-JOBID",dataxJobid);
         Writer.Task taskWriter = (Writer.Task) this.getPlugin();
         //统计waitReadTime，并且在finally end
         PerfRecord channelWaitRead = new PerfRecord(getTaskGroupId(), getTaskId(), PerfRecord.PHASE.WAIT_READ_TIME);
