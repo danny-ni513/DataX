@@ -37,10 +37,13 @@ public class ReaderRunner extends AbstractRunner implements Runnable {
         assert null != this.recordSender;
 
         MDC.remove("DATAX-JOBID");
+        MDC.remove("DATAX-TASKID");
         SofaTraceContext sofaTraceContext = SofaTraceContextHolder.getSofaTraceContext();
         SofaTracerSpan sofaTracerSpan = sofaTraceContext.getCurrentSpan();
-        String dataxJobid = sofaTracerSpan.getBaggageItem("DATAX-JOBID");
-        MDC.put("DATAX-JOBID",dataxJobid);
+        String jobId = sofaTracerSpan.getBaggageItem("DATAX-JOBID");
+        String taskId = sofaTracerSpan.getBaggageItem("DATAX-TASKID");
+        MDC.put("DATAX-JOBID",jobId);
+        MDC.put("DATAX-TASKID",taskId+"");
 
         Reader.Task taskReader = (Reader.Task) this.getPlugin();
 

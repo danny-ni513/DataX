@@ -24,10 +24,13 @@ public class TaskGroupContainerRunner implements Runnable {
 	public void run() {
 		try {
 			MDC.remove("DATAX-JOBID");
+			MDC.remove("DATAX-TASKID");
 			SofaTraceContext sofaTraceContext = SofaTraceContextHolder.getSofaTraceContext();
 			SofaTracerSpan sofaTracerSpan = sofaTraceContext.getCurrentSpan();
-			String dataxJobid = sofaTracerSpan.getBaggageItem("DATAX-JOBID");
-			MDC.put("DATAX-JOBID",dataxJobid);
+			String jobId = sofaTracerSpan.getBaggageItem("DATAX-JOBID");
+			String taskId = sofaTracerSpan.getBaggageItem("DATAX-TASKID");
+			MDC.put("DATAX-JOBID",jobId);
+			MDC.put("DATAX-TASKID",taskId+"");
 
             Thread.currentThread().setName(
                     String.format("taskGroup-%d", this.taskGroupContainer.getTaskGroupId()));
