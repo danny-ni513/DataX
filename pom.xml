@@ -61,6 +61,11 @@
                 <artifactId>fastjson</artifactId>
                 <version>${fastjson-version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.alipay.sofa</groupId>
+                <artifactId>tracer-sofa-boot-starter</artifactId>
+                <version>3.4.3</version>
+            </dependency>
             <!--<dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>

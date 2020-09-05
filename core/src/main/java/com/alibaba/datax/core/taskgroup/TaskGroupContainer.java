@@ -28,6 +28,7 @@ import com.alibaba.datax.core.util.container.CoreConstant;
 import com.alibaba.datax.core.util.container.LoadUtil;
 import com.alibaba.datax.dataxservice.face.domain.enums.State;
 import com.alibaba.fastjson.JSON;
+import com.alipay.common.tracer.core.async.SofaTracerRunnable;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -411,7 +412,7 @@ public class TaskGroupContainer extends AbstractContainer {
              * 生成writerThread
              */
             writerRunner = (WriterRunner) generateRunner(PluginType.WRITER);
-            this.writerThread = new Thread(writerRunner,
+            this.writerThread = new Thread(new SofaTracerRunnable(writerRunner),
                     String.format("%d-%d-%d-writer",
                             jobId, taskGroupId, this.taskId));
             //通过设置thread的contextClassLoader，即可实现同步和主程序不通的加载器
@@ -423,7 +424,7 @@ public class TaskGroupContainer extends AbstractContainer {
              * 生成readerThread
              */
             readerRunner = (ReaderRunner) generateRunner(PluginType.READER,transformerInfoExecs);
-            this.readerThread = new Thread(readerRunner,
+            this.readerThread = new Thread(new SofaTracerRunnable(readerRunner),
                     String.format("%d-%d-%d-reader",
                             jobId, taskGroupId, this.taskId));
             /**

@@ -7,6 +7,7 @@ import com.alibaba.datax.core.statistics.container.communicator.AbstractContaine
 import com.alibaba.datax.core.taskgroup.TaskGroupContainer;
 import com.alibaba.datax.core.taskgroup.runner.TaskGroupContainerRunner;
 import com.alibaba.datax.core.util.FrameworkErrorCode;
+import com.alipay.common.tracer.core.async.SofaTracerRunnable;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -27,7 +28,7 @@ public abstract class ProcessInnerScheduler extends AbstractScheduler {
 
         for (Configuration taskGroupConfiguration : configurations) {
             TaskGroupContainerRunner taskGroupContainerRunner = newTaskGroupContainerRunner(taskGroupConfiguration);
-            this.taskGroupContainerExecutorService.execute(taskGroupContainerRunner);
+            this.taskGroupContainerExecutorService.execute(new SofaTracerRunnable(taskGroupContainerRunner));
         }
 
         this.taskGroupContainerExecutorService.shutdown();
