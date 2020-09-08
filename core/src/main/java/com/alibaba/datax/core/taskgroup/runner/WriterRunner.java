@@ -38,12 +38,14 @@ public class WriterRunner extends AbstractRunner implements Runnable {
         Validate.isTrue(this.recordReceiver != null);
         MDC.remove("DATAX-JOBID");
         MDC.remove("DATAX-TASKID");
+        MDC.remove("DATAX-STATUS");
         SofaTraceContext sofaTraceContext = SofaTraceContextHolder.getSofaTraceContext();
         SofaTracerSpan sofaTracerSpan = sofaTraceContext.getCurrentSpan();
         String jobId = sofaTracerSpan.getBaggageItem("DATAX-JOBID");
         String taskId = sofaTracerSpan.getBaggageItem("DATAX-TASKID");
         MDC.put("DATAX-JOBID",jobId);
         MDC.put("DATAX-TASKID",taskId+"");
+        MDC.put("DATAX-STATUS","RUNNING");
         Writer.Task taskWriter = (Writer.Task) this.getPlugin();
         //统计waitReadTime，并且在finally end
         PerfRecord channelWaitRead = new PerfRecord(getTaskGroupId(), getTaskId(), PerfRecord.PHASE.WAIT_READ_TIME);

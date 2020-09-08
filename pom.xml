@@ -186,10 +186,9 @@
     <distributionManagement>
         <repository>
             <!-- nexus服务器中用户名：在settings.xml中<server>的id-->
-            <id>repo.go2.im</id>
+            <id>repo-maven-release</id>
             <!-- 这个名称自己定义 -->
-            <name>repo.go2.im</name>
-            <url>https://repo.go2.im:8443/repository/maven-releases/</url>
+            <url>https://repo.go2.im:8443/repository/maven-snapshots/</url>
         </repository>
     </distributionManagement>
 </project>
