@@ -142,13 +142,43 @@ public final class OriginalConfPretreatmentUtil {
     }
 
     public static void dealWriteMode(Configuration originalConfig, DataBaseType dataBaseType) {
+        // 默认为：insert 方式
+        String writeMode = originalConfig.getString(Key.WRITE_MODE, "INSERT");
+
+        if("UPDATE".equals(writeMode.toUpperCase())&&DataBaseType.Oracle.equals(dataBaseType)){
+            dealUpdateColumnConf(originalConfig,dataBaseType);
+        }else if("INSERT".equals(writeMode.toUpperCase())){
+            dealInsertColumnConf(originalConfig,dataBaseType);
+        }
+    }
+
+    private static void dealUpdateColumnConf(Configuration originalConfig, DataBaseType dataBaseType){
+        List<String> columns = originalConfig.getList(Key.COLUMN, String.class);
+        List<String> uniqueColumns = originalConfig.getList(Key.UNIQUE_COLUMN,String.class);
+        String jdbcUrl = originalConfig.getString(String.format("%s[0].%s",
+                Constant.CONN_MARK, Key.JDBC_URL, String.class));
+        List<String> valueHolders = new ArrayList<String>(columns.size());
+        for (int i = 0; i < columns.size(); i++) {
+            valueHolders.add("?");
+        }
+
+        List<String> uniqueValueHolders = new ArrayList<String>(uniqueColumns.size());
+        for (int i = 0; i < uniqueColumns.size(); i++) {
+            uniqueValueHolders.add("?");
+        }
+
+        String writeDataSqlTemplate = WriterUtil.getUpdateTemplate(columns,uniqueColumns, valueHolders,uniqueValueHolders );
+
+        LOG.info("Write UPDATE data [\n{}\n], which jdbcUrl like:[{}]", writeDataSqlTemplate, jdbcUrl);
+
+        originalConfig.set(Constant.INSERT_OR_REPLACE_TEMPLATE_MARK, writeDataSqlTemplate);
+    }
+
+    private static void dealInsertColumnConf(Configuration originalConfig, DataBaseType dataBaseType){
         List<String> columns = originalConfig.getList(Key.COLUMN, String.class);
 
         String jdbcUrl = originalConfig.getString(String.format("%s[0].%s",
                 Constant.CONN_MARK, Key.JDBC_URL, String.class));
-
-        // 默认为：insert 方式
-        String writeMode = originalConfig.getString(Key.WRITE_MODE, "INSERT");
 
         List<String> valueHolders = new ArrayList<String>(columns.size());
         for (int i = 0; i < columns.size(); i++) {
@@ -168,12 +198,14 @@ public final class OriginalConfPretreatmentUtil {
             forceUseUpdate = true;
         }
 
-        String writeDataSqlTemplate = WriterUtil.getWriteTemplate(columns, valueHolders, writeMode,dataBaseType, forceUseUpdate);
+        String writeDataSqlTemplate = WriterUtil.getWriteTemplate(columns, valueHolders, "INSERT",dataBaseType, forceUseUpdate);
 
         LOG.info("Write data [\n{}\n], which jdbcUrl like:[{}]", writeDataSqlTemplate, jdbcUrl);
 
         originalConfig.set(Constant.INSERT_OR_REPLACE_TEMPLATE_MARK, writeDataSqlTemplate);
     }
+
+
 
     public static boolean isOB10(String jdbcUrl) {
         //ob10的处理

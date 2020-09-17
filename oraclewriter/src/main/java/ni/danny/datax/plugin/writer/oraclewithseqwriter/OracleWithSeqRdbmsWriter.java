@@ -178,7 +178,6 @@ public class OracleWithSeqRdbmsWriter {
 
         protected DataBaseType dataBaseType;
         private static final String VALUE_HOLDER = "?";
-
         protected String username;
         protected String password;
         protected String jdbcUrl;
@@ -186,11 +185,13 @@ public class OracleWithSeqRdbmsWriter {
         protected int sequenceIndex=0;
         protected String table;
         protected List<String> columns;
+        protected List<String> uniqueColumns;
         protected List<String> preSqls;
         protected List<String> postSqls;
         protected int batchSize;
         protected int batchByteSize;
         protected int columnNumber = 0;
+        protected int uniqueColumnNumber = 0;
         protected TaskPluginCollector taskPluginCollector;
 
         // 作为日志显示信息时，需要附带的通用信息。比如信息所对应的数据库连接等信息，针对哪个表做的操作
@@ -211,6 +212,7 @@ public class OracleWithSeqRdbmsWriter {
             this.username = writerSliceConfig.getString(Key.USERNAME);
             this.password = writerSliceConfig.getString(Key.PASSWORD);
             this.jdbcUrl = writerSliceConfig.getString(Key.JDBC_URL);
+            this.writeMode = writerSliceConfig.getString(Key.WRITE_MODE);
 
             //ob10的处理
             if (this.jdbcUrl.startsWith(Constant.OB10_SPLIT_STRING) && this.dataBaseType == DataBaseType.MySql) {
@@ -226,7 +228,7 @@ public class OracleWithSeqRdbmsWriter {
                 LOG.info("this is ob1_0 jdbc url. user=" + this.username + " :url=" + this.jdbcUrl);
             }
 
-            if(this.dataBaseType == DataBaseType.Oracle){
+            if("INSERT".equals(this.writeMode.toUpperCase())&&this.dataBaseType == DataBaseType.Oracle){
                 this.sequenceName = writerSliceConfig.get(Key.SEQUENCE_NAME,String.class);
                 this.sequenceIndex = writerSliceConfig.get(Key.SEQUENCE_INDEX,Integer.class);
 
@@ -236,6 +238,11 @@ public class OracleWithSeqRdbmsWriter {
 
             this.columns = writerSliceConfig.getList(Key.COLUMN, String.class);
             this.columnNumber = this.columns.size();
+            this.uniqueColumns = writerSliceConfig.getList(Key.UNIQUE_COLUMN,String.class);
+            if(this.uniqueColumns!=null&&!this.uniqueColumns.isEmpty()){
+                this.uniqueColumnNumber = this.uniqueColumns.size();
+            }
+
 
             this.preSqls = writerSliceConfig.getList(Key.PRE_SQL, String.class);
             this.postSqls = writerSliceConfig.getList(Key.POST_SQL, String.class);
@@ -273,8 +280,13 @@ public class OracleWithSeqRdbmsWriter {
             this.taskPluginCollector = taskPluginCollector;
 
             // 用于写入数据的时候的类型根据目的表字段类型转换
+            String columnsStr = StringUtils.join(this.columns, ",");
+            if(this.uniqueColumns!=null&&!this.uniqueColumns.isEmpty()){
+                columnsStr+=","+StringUtils.join(this.uniqueColumns,",");
+            }
             this.resultSetMetaData = DBUtil.getColumnMetaData(connection,
-                    this.table, StringUtils.join(this.columns, ","));
+                    this.table,columnsStr);
+
             // 写数据库的SQL语句
             calcWriteRecordSql();
 
@@ -284,19 +296,20 @@ public class OracleWithSeqRdbmsWriter {
                 Record record;
                 while ((record = recordReceiver.getFromReader()) != null) {
                     int recordColumnNumber = record.getColumnNumber();
-                    if(!this.sequenceName.isEmpty()){
+                    if("INSERT".equals(this.writeMode.toUpperCase())&&this.sequenceName!=null&&!this.sequenceName.isEmpty()){
                         //如果存在自增序列配置，则读到的字段数在最后一列增加为序列器
                         recordColumnNumber = recordColumnNumber+1;
                     }
-                     if ( recordColumnNumber != this.columnNumber) {
+                     if ( recordColumnNumber != this.columnNumber+this.uniqueColumnNumber) {
                         // 源头读取字段列数与目的表字段写入列数不相等，直接报错
                         throw DataXException
                                 .asDataXException(
                                         DBUtilErrorCode.CONF_ERROR,
                                         String.format(
-                                                "列配置信息有错误. 因为您配置的任务中，源头读取字段数:%s 与 目的表要写入的字段数:%s 不相等. 请检查您的配置并作出修改.",
+                                                "列配置信息有错误. 因为您配置的任务中，源头读取字段数:%s 与 目的表要写入的字段数:%s,%s 不相等. 请检查您的配置并作出修改.",
                                                 record.getColumnNumber(),
-                                                this.columnNumber));
+                                                this.columnNumber,
+                                                this.uniqueColumnNumber));
                     }
 
                     writeBuffer.add(record);
@@ -415,13 +428,13 @@ public class OracleWithSeqRdbmsWriter {
         // 直接使用了两个类变量：columnNumber,resultSetMetaData
         protected PreparedStatement fillPreparedStatement(PreparedStatement preparedStatement, Record record)
                 throws SQLException {
-            int tmpColumnNumber = this.columnNumber;
-            if(!this.sequenceName.isEmpty()){
+            int tmpColumnNumber = this.columnNumber+this.uniqueColumnNumber;
+            if("INSERT".equals(this.writeMode.toUpperCase())&&this.sequenceName!=null&&!this.sequenceName.isEmpty()){
                 tmpColumnNumber = tmpColumnNumber-1;
             }
             for (int i = 0; i < tmpColumnNumber; i++) {
                 int columnSqlType = this.resultSetMetaData.getMiddle().get(i);
-                LOG.info("i=[{}}],columnSqlType=[{}],record=[{}}]",i,columnSqlType,record.toString());
+               // LOG.info("i=[{}],columnSqlType=[{}],record=[{}]",i,columnSqlType,record.getColumn(i));
                 preparedStatement = fillPreparedStatementColumnType(preparedStatement, i, columnSqlType, record.getColumn(i));
             }
 

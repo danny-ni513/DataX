@@ -17,7 +17,10 @@ public final class Key {
     //只支持oracle-sequence
     public final static String SEQUENCE_NAME="sequence.name";
     public final static String SEQUENCE_INDEX="sequence.index";
-    public final static String SEQUENCE_COLUMN="sequence.column";
+
+    //oracle-update
+    public final static String UNIQUE_COLUMN="uniqueColumn";
+
 
 
     public final static String PRE_SQL = "preSql";

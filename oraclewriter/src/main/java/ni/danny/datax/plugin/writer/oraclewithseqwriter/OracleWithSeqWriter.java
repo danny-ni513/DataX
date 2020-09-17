@@ -17,6 +17,7 @@ public class OracleWithSeqWriter extends Writer {
 		private Configuration originalConfig = null;
 		private OracleWithSeqRdbmsWriter.Job commonRdbmsWriterJob;
 
+		@Override
 		public void preCheck() {
             this.init();
             this.commonRdbmsWriterJob.writerPreCheck(this.originalConfig, DATABASE_TYPE);
@@ -26,14 +27,13 @@ public class OracleWithSeqWriter extends Writer {
 		public void init() {
 			this.originalConfig = super.getPluginJobConf();
 
-			// warn：not like mysql, oracle only support insert mode, don't use
 			String writeMode = this.originalConfig.getString(Key.WRITE_MODE);
-			if (null != writeMode) {
+			if(null != writeMode && !"INSERT".equals(writeMode.toUpperCase())&&!"UPDATE".equals(writeMode.toUpperCase())){
 				throw DataXException
 						.asDataXException(
 								DBUtilErrorCode.CONF_ERROR,
 								String.format(
-										"写入模式(writeMode)配置错误. 因为Oracle不支持配置项 writeMode: %s, Oracle只能使用insert sql 插入数据. 请检查您的配置并作出修改",
+										"写入模式(writeMode)配置错误. 因为Oracle不支持配置项 writeMode: %s, Oracle只能使用insert/update sql 插入数据. 请检查您的配置并作出修改",
 										writeMode));
 			}
 
@@ -83,6 +83,7 @@ public class OracleWithSeqWriter extends Writer {
 			this.commonRdbmsWriterTask.prepare(this.writerSliceConfig);
 		}
 
+		@Override
 		public void startWrite(RecordReceiver recordReceiver) {
 			this.commonRdbmsWriterTask.startWrite(recordReceiver,
 					this.writerSliceConfig, super.getTaskPluginCollector());

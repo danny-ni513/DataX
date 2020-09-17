@@ -108,6 +108,28 @@ public final class WriterUtil {
         }
     }
 
+    public static String getUpdateTemplate(List<String> columnHolders,List<String> uniqueColumnHolders,List<String> valueHolders
+            ,List<String> uniqueValueHolders){
+        StringBuilder writeDataSqlTemplate;
+        writeDataSqlTemplate = new StringBuilder()
+                .append("UPDATE %s SET ");
+                for(int i=0,z=columnHolders.size();i<z;i++){
+                    writeDataSqlTemplate.append(columnHolders.get(i).toUpperCase()+" = "+valueHolders.get(i)+" ");
+                    if(i<z-1){
+                        writeDataSqlTemplate.append(",");
+                    }
+                }
+        writeDataSqlTemplate.append(" WHERE ");
+                for(int i=0,z=uniqueColumnHolders.size();i<z;i++){
+                    writeDataSqlTemplate.append(uniqueColumnHolders.get(i).toUpperCase()+" = "+uniqueValueHolders.get(i)+" ");
+                    if(i<z-1){
+                        writeDataSqlTemplate.append(" AND ");
+                    }
+                }
+
+        return writeDataSqlTemplate.toString() ;
+    }
+
     public static String getWriteTemplate(List<String> columnHolders, List<String> valueHolders, String writeMode, DataBaseType dataBaseType, boolean forceUseUpdate) {
         boolean isWriteModeLegal = writeMode.trim().toLowerCase().startsWith("insert")
                 || writeMode.trim().toLowerCase().startsWith("replace")
@@ -120,7 +142,8 @@ public final class WriterUtil {
         // && writeMode.trim().toLowerCase().startsWith("replace")
         String writeDataSqlTemplate;
         if (forceUseUpdate ||
-                ((dataBaseType == DataBaseType.MySql || dataBaseType == DataBaseType.Tddl) && writeMode.trim().toLowerCase().startsWith("update"))
+                ((dataBaseType == DataBaseType.MySql || dataBaseType == DataBaseType.Tddl)
+                        && writeMode.trim().toLowerCase().startsWith("update"))
                 ) {
             //update只在mysql下使用
 
