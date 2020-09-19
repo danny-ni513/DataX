@@ -1,6 +1,0 @@
-{
-    "name": "oraclewithseqwriter",
-    "class": "ni.danny.datax.plugin.writer.oraclewithseqwriter.OracleWithSeqWriter",
-    "description": "column[0]为默认序列器所使用的字段，可使用column[index]",
-    "developer": "dannyNi"
-}
