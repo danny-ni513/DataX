@@ -1,0 +1,6 @@
+{
+    "name": "oraclewithseqwriter",
+    "class": "ni.danny.datax.plugin.writer.oraclewithseqwriter.OracleWithSeqWriter",
+    "description": "column[0]为默认序列器所使用的字段，可使用column[index],可以使用UPDATE语句,VALUE位置在后面的是where条件后的唯一条件",
+    "developer": "dannyNi"
+}

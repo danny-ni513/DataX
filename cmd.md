@@ -1,1 +1,1 @@
-mvn -U clean package assembly:assembly -Dmaven.test.skip=true
+mvn -U clean install assembly:assembly -Dmaven.test.skip=true deploy:deploy

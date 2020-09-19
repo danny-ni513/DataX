@@ -38,12 +38,14 @@ public class ReaderRunner extends AbstractRunner implements Runnable {
 
         MDC.remove("DATAX-JOBID");
         MDC.remove("DATAX-TASKID");
+        MDC.remove("DATAX-STATUS");
         SofaTraceContext sofaTraceContext = SofaTraceContextHolder.getSofaTraceContext();
         SofaTracerSpan sofaTracerSpan = sofaTraceContext.getCurrentSpan();
         String jobId = sofaTracerSpan.getBaggageItem("DATAX-JOBID");
         String taskId = sofaTracerSpan.getBaggageItem("DATAX-TASKID");
         MDC.put("DATAX-JOBID",jobId);
         MDC.put("DATAX-TASKID",taskId+"");
+        MDC.put("DATAX-STATUS","RUNNING");
 
         Reader.Task taskReader = (Reader.Task) this.getPlugin();
 
