@@ -32,6 +32,7 @@ import com.alipay.common.tracer.core.async.SofaTracerRunnable;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.util.*;
 
@@ -129,6 +130,7 @@ public class TaskGroupContainer extends AbstractContainer {
             }
             
             int taskCountInThisTaskGroup = taskConfigs.size();
+            MDC.put("DATAX-STATUS","RUNNING");
             LOG.info(String.format(
                     "taskGroupId=[%d] start [%d] channels for [%d] tasks.",
                     this.taskGroupId, channelNumber, taskCountInThisTaskGroup));
