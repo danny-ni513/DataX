@@ -27,12 +27,14 @@
         <diamond.version>3.7.2.1-SNAPSHOT</diamond.version>
 
         <!--slf4j 1.7.10 和 logback-classic 1.0.13 是好基友 -->
-        <slf4j-api-version>1.7.10</slf4j-api-version>
-        <logback-classic-version>1.0.13</logback-classic-version>
+        <slf4j-api-version>1.7.25</slf4j-api-version>
+        <logback-classic-version>1.2.3</logback-classic-version>
         <commons-io-version>2.4</commons-io-version>
         <junit-version>4.11</junit-version>
         <tddl.version>5.1.22-1</tddl.version>
         <swift-version>1.0.0</swift-version>
+        <logback-kafka-appender-version>0.3</logback-kafka-appender-version>
+        
 
         <project-sourceEncoding>UTF-8</project-sourceEncoding>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -45,64 +47,64 @@
         <module>core</module>
         <module>transformer</module>
 
-        <!-- reader -->
-        <module>mysqlreader</module>
-        <module>drdsreader</module>
-        <module>sqlserverreader</module>
-        <module>postgresqlreader</module>
-        <module>kingbaseesreader</module>
-        <module>oraclereader</module>
-        <module>odpsreader</module>
-        <module>otsreader</module>
-        <module>otsstreamreader</module>
-        <module>txtfilereader</module>
-        <module>hdfsreader</module>
-        <module>streamreader</module>
-        <module>ossreader</module>
-        <module>ftpreader</module>
-        <module>mongodbreader</module>
-        <module>rdbmsreader</module>
-        <module>hbase11xreader</module>
-        <module>hbase094xreader</module>
-        <module>tsdbreader</module>
-        <module>opentsdbreader</module>
-        <module>cassandrareader</module>
-        <module>gdbreader</module>
+<!--        &lt;!&ndash; reader &ndash;&gt;-->
+<!--        <module>mysqlreader</module>-->
+<!--        <module>drdsreader</module>-->
+<!--        <module>sqlserverreader</module>-->
+<!--        <module>postgresqlreader</module>-->
+<!--        <module>kingbaseesreader</module>-->
+<!--        <module>oraclereader</module>-->
+<!--        <module>odpsreader</module>-->
+<!--        <module>otsreader</module>-->
+<!--        <module>otsstreamreader</module>-->
+<!--        <module>txtfilereader</module>-->
+<!--        <module>hdfsreader</module>-->
+<!--        <module>streamreader</module>-->
+<!--        <module>ossreader</module>-->
+<!--        <module>ftpreader</module>-->
+<!--        <module>mongodbreader</module>-->
+<!--        <module>rdbmsreader</module>-->
+<!--        <module>hbase11xreader</module>-->
+<!--        <module>hbase094xreader</module>-->
+<!--        <module>tsdbreader</module>-->
+<!--        <module>opentsdbreader</module>-->
+<!--        <module>cassandrareader</module>-->
+<!--        <module>gdbreader</module>-->
 
-        <!-- writer -->
-        <module>mysqlwriter</module>
-        <module>drdswriter</module>
-        <module>odpswriter</module>
-        <module>txtfilewriter</module>
-        <module>ftpwriter</module>
-        <module>hdfswriter</module>
-        <module>streamwriter</module>
-        <module>otswriter</module>
-        <module>oraclewriter</module>
-        <module>sqlserverwriter</module>
-        <module>postgresqlwriter</module>
-        <module>kingbaseeswriter</module>
-        <module>osswriter</module>
-        <module>mongodbwriter</module>
-        <module>adswriter</module>
-        <module>ocswriter</module>
-        <module>rdbmswriter</module>
-        <module>hbase11xwriter</module>
-        <module>hbase094xwriter</module>
-        <module>hbase11xsqlwriter</module>
-        <module>hbase11xsqlreader</module>
-        <module>elasticsearchwriter</module>
-        <module>tsdbwriter</module>
-        <module>adbpgwriter</module>
-        <module>gdbwriter</module>
-        <module>cassandrawriter</module>
-        <module>clickhousewriter</module>
-        <!-- common support module -->
-        <module>plugin-rdbms-util</module>
-        <module>plugin-unstructured-storage-util</module>
-        <module>hbase20xsqlreader</module>
-        <module>hbase20xsqlwriter</module>
-        <module>kuduwriter</module>
+<!--        &lt;!&ndash; writer &ndash;&gt;-->
+<!--        <module>mysqlwriter</module>-->
+<!--        <module>drdswriter</module>-->
+<!--        <module>odpswriter</module>-->
+<!--        <module>txtfilewriter</module>-->
+<!--        <module>ftpwriter</module>-->
+<!--        <module>hdfswriter</module>-->
+<!--        <module>streamwriter</module>-->
+<!--        <module>otswriter</module>-->
+<!--        <module>oraclewriter</module>-->
+<!--        <module>sqlserverwriter</module>-->
+<!--        <module>postgresqlwriter</module>-->
+<!--        <module>kingbaseeswriter</module>-->
+<!--        <module>osswriter</module>-->
+<!--        <module>mongodbwriter</module>-->
+<!--        <module>adswriter</module>-->
+<!--        <module>ocswriter</module>-->
+<!--        <module>rdbmswriter</module>-->
+<!--        <module>hbase11xwriter</module>-->
+<!--        <module>hbase094xwriter</module>-->
+<!--        <module>hbase11xsqlwriter</module>-->
+<!--        <module>hbase11xsqlreader</module>-->
+<!--        <module>elasticsearchwriter</module>-->
+<!--        <module>tsdbwriter</module>-->
+<!--        <module>adbpgwriter</module>-->
+<!--        <module>gdbwriter</module>-->
+<!--        <module>cassandrawriter</module>-->
+<!--        <module>clickhousewriter</module>-->
+<!--        &lt;!&ndash; common support module &ndash;&gt;-->
+<!--        <module>plugin-rdbms-util</module>-->
+<!--        <module>plugin-unstructured-storage-util</module>-->
+<!--        <module>hbase20xsqlreader</module>-->
+<!--        <module>hbase20xsqlwriter</module>-->
+<!--        <module>kuduwriter</module>-->
     </modules>
 
     <dependencyManagement>
@@ -132,10 +134,23 @@
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j-api-version}</version>
             </dependency>
+
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
                 <version>${logback-classic-version}</version>
+            </dependency>
+
+<!--            <dependency>-->
+<!--                <groupId>com.github.danielwegener</groupId>-->
+<!--                <artifactId>logback-kafka-appender</artifactId>-->
+<!--                <version>${logback-kafka-appender-version}</version>-->
+<!--            </dependency>-->
+
+            <dependency>
+                <groupId>com.github.ptgoetz</groupId>
+                <artifactId>logback-kafka</artifactId>
+                <version>${logback-kafka-appender-version}</version>
             </dependency>
 
             <dependency>

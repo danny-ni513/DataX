@@ -69,14 +69,16 @@ public class CommonRdbmsWriter {
                 Configuration connConf = Configuration.from(connections.get(i).toString());
                 String jdbcUrl = connConf.getString(Key.JDBC_URL);
                 List<String> expandedTables = connConf.getList(Key.TABLE, String.class);
-                boolean hasInsertPri = DBUtil.checkInsertPrivilege(dataBaseType, jdbcUrl, username, password, expandedTables);
+                boolean hasInsertPri = DBUtil.checkInsertPrivilege
+                        (dataBaseType, jdbcUrl, username, password, expandedTables);
 
                 if (!hasInsertPri) {
                     throw RdbmsException.asInsertPriException(dataBaseType, originalConfig.getString(Key.USERNAME), jdbcUrl);
                 }
 
                 if (DBUtil.needCheckDeletePrivilege(originalConfig)) {
-                    boolean hasDeletePri = DBUtil.checkDeletePrivilege(dataBaseType, jdbcUrl, username, password, expandedTables);
+                    boolean hasDeletePri = DBUtil.checkDeletePrivilege
+                            (dataBaseType, jdbcUrl, username, password, expandedTables);
                     if (!hasDeletePri) {
                         throw RdbmsException.asDeletePriException(dataBaseType, originalConfig.getString(Key.USERNAME), jdbcUrl);
                     }
