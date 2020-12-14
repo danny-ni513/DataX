@@ -188,10 +188,11 @@ public class JobContainer extends AbstractContainer {
                     }
 
                     LOG.info(PerfTrace.getInstance().summarizeNoException());
-
+                    int waitDestroy = 0;
                     for(int i=0;i<10*10000;i++){
-                        if(i/10000 == 0){
-                            LOG.info("回收等待---");
+                        if(i%10000 == 0){
+                            waitDestroy++;
+                            LOG.info("回收等待--->{}",waitDestroy);
                         }
                     }
 
@@ -655,8 +656,8 @@ public class JobContainer extends AbstractContainer {
 
         sendNoticeMsg(new HashMap<String,String>(){{
             put("type", CoreConstant.JOB_NOTICE_TYPE_FINISH);
-            put("start_timestamp",startTimeStamp+"");
-            put("end_timestamp",endTimeStamp+"");
+            put("start_timestamp",dateFormat.format(startTimeStamp));
+            put("end_timestamp",dateFormat.format(endTimeStamp));
             put("total_costs",totalCosts+"");
             put("byte_speed_per_second",byteSpeedPerSecond+"");
             put("record_speed_pre_second",recordSpeedPerSecond+"");
