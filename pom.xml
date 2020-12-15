@@ -101,7 +101,7 @@
 <!--        <module>clickhousewriter</module>-->
 <!--        &lt;!&ndash; common support module &ndash;&gt;-->
 <!--        <module>plugin-rdbms-util</module>-->
-<!--        <module>plugin-unstructured-storage-util</module>-->
+        <module>plugin-unstructured-storage-util</module>
 <!--        <module>hbase20xsqlreader</module>-->
 <!--        <module>hbase20xsqlwriter</module>-->
 <!--        <module>kuduwriter</module>-->
