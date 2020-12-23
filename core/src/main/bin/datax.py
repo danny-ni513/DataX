@@ -14,6 +14,7 @@ from optparse import OptionGroup
 from string import Template
 import codecs
 import platform
+import urllib2
 
 def isWindows():
     return platform.system() == 'Windows'
@@ -33,6 +34,15 @@ DEFAULT_PROPERTY_CONF = "-Dfile.encoding=UTF-8 -Dlogback.statusListenerClass=ch.
 ENGINE_COMMAND = "java -server ${jvm} %s -classpath %s  ${params} com.alibaba.datax.core.Engine -mode ${mode} -jobid ${jobid} -job ${job}" % (
     DEFAULT_PROPERTY_CONF, CLASS_PATH)
 REMOTE_DEBUG_CONFIG = "-Xdebug -Xrunjdwp:transport=dt_socket,server=y,address=9999"
+DEFAULT_JOBID = -1
+DEFAULT_JOBID_URL="http://10.131.151.24:19999/paraconfig/randomId/create?idTag=datax_jobid&beShort=true&_t=%s" % (time.time())
+
+randomJobIdResp = urllib2.urlopen(DEFAULT_JOBID_URL)
+randomJobIdData = randomJobIdResp.read()
+if 200 == randomJobIdResp.code :
+    randomJobIdDataJson = json.loads(randomJobIdData.decode('utf-8'))
+    if '0' == randomJobIdDataJson['code'] :
+        DEFAULT_JOBID = randomJobIdDataJson['data']
 
 RET_STATE = {
     "KILL": 143,
@@ -79,7 +89,7 @@ def getOptionParser():
                                      "Make sure these options can be used in Product Env.")
     prodEnvOptionGroup.add_option("-j", "--jvm", metavar="<jvm parameters>", dest="jvmParameters", action="store",
                                   default=DEFAULT_JVM, help="Set jvm parameters if necessary.")
-    prodEnvOptionGroup.add_option("--jobid", metavar="<job unique id>", dest="jobid", action="store", default="-1",
+    prodEnvOptionGroup.add_option("--jobid", metavar="<job unique id>", dest="jobid", action="store", default=DEFAULT_JOBID,
                                   help="Set job unique id when running by Distribute/Local Mode.")
     prodEnvOptionGroup.add_option("-m", "--mode", metavar="<job runtime mode>",
                                   action="store", default="standalone",
