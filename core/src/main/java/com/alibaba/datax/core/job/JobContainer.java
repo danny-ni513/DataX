@@ -1016,10 +1016,10 @@ public class JobContainer extends AbstractContainer {
         String noticeId=this.configuration.getString(CoreConstant.JOB_NOTICE_ID);
         if(StringUtils.isNotBlank(noticeId)){
             String jobName = this.configuration.getString(CoreConstant.JOB_NAME);
-            Integer jobid = this.configuration.getInt(CoreConstant.DATAX_CORE_CONTAINER_JOB_ID);
+            Integer jobId = this.configuration.getInt(CoreConstant.DATAX_CORE_CONTAINER_JOB_ID);
             map.put("notice_id",noticeId);
             map.put("job_name",jobName);
-            map.put("job_id",jobid);
+            map.put("job_id",jobId);
             map.put("now_timestamp",System.currentTimeMillis());
             String jsonInfo = JSON.toJSONString(map);
             LOG.error(jsonInfo);
