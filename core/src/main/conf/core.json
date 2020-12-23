@@ -21,6 +21,7 @@
             "reportDataxLog": false,
             "reportPerfLog": false
         },
+        "killSelfCheckUrl":"http://localhost:58848/nacos/v1/cs/configs?tenant=datax&dataId=killJobIds&group=DEFAULT_GROUP",
         "transport": {
             "channel": {
                 "class": "com.alibaba.datax.core.transport.channel.memory.MemoryChannel",
