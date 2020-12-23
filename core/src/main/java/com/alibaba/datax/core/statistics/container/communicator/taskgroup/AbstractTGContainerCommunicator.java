@@ -29,7 +29,7 @@ public abstract class AbstractTGContainerCommunicator extends AbstractContainerC
 
     public AbstractTGContainerCommunicator(Configuration configuration) {
         super(configuration);
-        this.jobId = configuration.getInt(
+        this.jobId = configuration.getLong(
                 CoreConstant.DATAX_CORE_CONTAINER_JOB_ID);
         super.setCollector(new ProcessInnerCollector(this.jobId));
         this.taskGroupId = configuration.getInt(
