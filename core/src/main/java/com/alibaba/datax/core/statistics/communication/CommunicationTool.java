@@ -152,6 +152,27 @@ public final class CommunicationTool {
             return sb.toString();
         }
 
+        public static Map<String,Object> getSnapshotMap(final Communication communication){
+            Map<String,Object> map = new HashMap<>(10);
+            map.put("total",getTotal(communication));
+            map.put("speed",getSpeed(communication));
+            map.put("error",getError(communication));
+            map.put("waitWriterTime",PerfTrace.unitTime(communication.getLongCounter(WAIT_WRITER_TIME)));
+            map.put("waitReaderTime",PerfTrace.unitTime(communication.getLongCounter(WAIT_READER_TIME)));
+
+            if (communication.getLongCounter(CommunicationTool.TRANSFORMER_USED_TIME) > 0
+                    || communication.getLongCounter(CommunicationTool.TRANSFORMER_SUCCEED_RECORDS) > 0
+                    ||communication.getLongCounter(CommunicationTool.TRANSFORMER_FAILED_RECORDS) > 0
+                    || communication.getLongCounter(CommunicationTool.TRANSFORMER_FILTER_RECORDS) > 0) {
+                map.put("transformerSuccessRecords",communication.getLongCounter(CommunicationTool.TRANSFORMER_SUCCEED_RECORDS));
+                map.put("transformerErrorRecords",communication.getLongCounter(CommunicationTool.TRANSFORMER_FAILED_RECORDS));
+                map.put("transformerFilterRecords",communication.getLongCounter(CommunicationTool.TRANSFORMER_FILTER_RECORDS));
+                map.put("transformerUsedTime",PerfTrace.unitTime(communication.getLongCounter(CommunicationTool.TRANSFORMER_USED_TIME)));
+            }
+            map.put("percentage",getPercentage(communication));
+            return map;
+        }
+
         private static String getTotal(final Communication communication) {
             return String.format("%d records, %d bytes",
                     communication.getLongCounter(TOTAL_READ_RECORDS),

@@ -13,6 +13,8 @@ public class CoreConstant {
 
 	public static final String DATAX_CORE_KILL_SELF_CHECK_URL = "core.killSelfCheckUrl";
 
+	public static final String DATAX_CORE_CONFIG_SERVER_URL = "core.configServerUrl";
+
 	public static final String DATAX_CORE_CONTAINER_TASKGROUP_CHANNEL = "core.container.taskGroup.channel";
 
 	public static final String DATAX_CORE_CONTAINER_MODEL = "core.container.model";
@@ -192,6 +194,8 @@ public class CoreConstant {
 	public final static String JOB_NOTICE_ID = "job.noticeId";
 
 	public final static String JOB_NAME = "job.name";
+
+	public final static String JOB_REPORT_FLAG = "job.reportFlag";
 
 	public final static String JOB_NOTICE_TYPE_INIT_ERROR = "DATAX-INIT-ERROR";
 	public final static String JOB_NOTICE_TYPE_START = "DATAX-START";

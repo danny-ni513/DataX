@@ -8,6 +8,7 @@ import com.alibaba.datax.core.statistics.container.communicator.AbstractContaine
 import com.alibaba.datax.core.statistics.container.report.ProcessInnerReporter;
 import com.alibaba.datax.core.util.container.CoreConstant;
 import com.alibaba.datax.dataxservice.face.domain.enums.State;
+import com.alibaba.fastjson.JSON;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +28,8 @@ public class StandAloneJobContainerCommunicator extends AbstractContainerCommuni
             .getLogger(StandAloneJobContainerCommunicator.class);
     private String killSelfCheckUrl;
     private OkHttpClient okHttpClient;
+    private boolean reportFlag = false;
+    private String jobName;
 
     public StandAloneJobContainerCommunicator(Configuration configuration) {
         super(configuration);
@@ -33,7 +37,11 @@ public class StandAloneJobContainerCommunicator extends AbstractContainerCommuni
                 CoreConstant.DATAX_CORE_CONTAINER_JOB_ID)));
         super.setReporter(new ProcessInnerReporter());
         this.killSelfCheckUrl = configuration.getString(CoreConstant.DATAX_CORE_KILL_SELF_CHECK_URL,"");
-        this.okHttpClient = new OkHttpClient();
+        if(StringUtils.isNotBlank(this.killSelfCheckUrl)){
+            this.okHttpClient = new OkHttpClient();
+        }
+        this.reportFlag = configuration.getBool(CoreConstant.JOB_REPORT_FLAG,false);
+        this.jobName = configuration.getString(CoreConstant.JOB_NAME,"");
     }
 
     @Override
@@ -59,6 +67,7 @@ public class StandAloneJobContainerCommunicator extends AbstractContainerCommuni
         super.getReporter().reportJobCommunication(super.getJobId(), communication);
 
         LOG.info(CommunicationTool.Stringify.getSnapshot(communication));
+        reportToKafka(communication);
         reportVmInfo();
         /** 定时检查信息 **/
         if(StringUtils.isNotBlank(this.killSelfCheckUrl)&&this.okHttpClient!=null){
@@ -71,8 +80,6 @@ public class StandAloneJobContainerCommunicator extends AbstractContainerCommuni
                 if(Arrays.stream(killJobIdArray)
                         .filter(f-> this.getJobId().toString().equals(f)).count()>0){
                     LOG.info("started to kill self...");
-
-
 
                     try{
                         Thread.sleep(3000);
@@ -90,6 +97,18 @@ public class StandAloneJobContainerCommunicator extends AbstractContainerCommuni
                 this.killSelfCheckUrl = "";
             }
 
+        }
+    }
+
+    private void reportToKafka(Communication communication){
+        if(this.reportFlag){
+            Map<String,Object> map = new HashMap<>(13);
+            map.put("job_name",this.jobName);
+            map.put("job_id",this.getJobId());
+            map.put("now_timestamp",System.currentTimeMillis());
+            map.putAll(CommunicationTool.Stringify.getSnapshotMap(communication));
+            String jsonInfo = JSON.toJSONString(map);
+            LOG.error(jsonInfo);
         }
     }
 
