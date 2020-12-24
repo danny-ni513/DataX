@@ -21,6 +21,7 @@
             "reportDataxLog": false,
             "reportPerfLog": false
         },
+        "reportFlag": true,
         "killSelfCheckUrl":"http://localhost:58848/nacos/v1/cs/configs?tenant=datax&dataId=killJobIds&group=DEFAULT_GROUP",
         "configServerUrl":"http://localhost:58848/nacos/v1/cs/configs?tenant=datax&group=DEFAULT_GROUP&dataId={}",
         "transport": {

@@ -28,7 +28,7 @@ public class StandAloneJobContainerCommunicator extends AbstractContainerCommuni
             .getLogger(StandAloneJobContainerCommunicator.class);
     private String killSelfCheckUrl;
     private OkHttpClient okHttpClient;
-    private boolean reportFlag = false;
+    private boolean reportFlag;
     private String jobName;
 
     public StandAloneJobContainerCommunicator(Configuration configuration) {
@@ -40,7 +40,7 @@ public class StandAloneJobContainerCommunicator extends AbstractContainerCommuni
         if(StringUtils.isNotBlank(this.killSelfCheckUrl)){
             this.okHttpClient = new OkHttpClient();
         }
-        this.reportFlag = configuration.getBool(CoreConstant.JOB_REPORT_FLAG,false);
+        this.reportFlag = configuration.getBool(CoreConstant.DATAX_CORE_JOB_REPORT_FLAG,true);
         this.jobName = configuration.getString(CoreConstant.JOB_NAME,"");
     }
 
@@ -80,6 +80,18 @@ public class StandAloneJobContainerCommunicator extends AbstractContainerCommuni
                 if(Arrays.stream(killJobIdArray)
                         .filter(f-> this.getJobId().toString().equals(f)).count()>0){
                     LOG.info("started to kill self...");
+
+                    if(this.reportFlag){
+                        String noticeId = this.getConfiguration().getString(CoreConstant.JOB_NOTICE_ID,"");
+                        Map reportMap = new HashMap();
+                        reportMap.put("notice_id",noticeId);
+                        reportMap.put("job_name",this.jobName);
+                        reportMap.put("job_id",this.getJobId());
+                        reportMap.put("type", CoreConstant.JOB_NOTICE_TYPE_KILLED);
+                        reportMap.put("now_timestamp",System.currentTimeMillis());
+                        String jsonInfo = JSON.toJSONString(reportMap);
+                        LOG.error(jsonInfo);
+                    }
 
                     try{
                         Thread.sleep(3000);
