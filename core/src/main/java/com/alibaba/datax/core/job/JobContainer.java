@@ -98,6 +98,8 @@ public class JobContainer extends AbstractContainer {
     public void start() {
         LOG.info("DataX jobContainer starts job.");
 
+        this.jobId = this.configuration.getLong(CoreConstant.DATAX_CORE_CONTAINER_JOB_ID,-1);
+
         sendNoticeMsg(new HashMap(){{
             put("type", CoreConstant.JOB_NOTICE_TYPE_START);
         }});
