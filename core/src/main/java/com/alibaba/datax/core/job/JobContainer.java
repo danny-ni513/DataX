@@ -1015,9 +1015,13 @@ public class JobContainer extends AbstractContainer {
     }
 
     private void sendNoticeMsg(Map map){
-        String noticeId=this.configuration.getString(CoreConstant.JOB_NOTICE_ID);
-        if(StringUtils.isNotBlank(noticeId)){
-            String jobName = this.configuration.getString(CoreConstant.JOB_NAME);
+        boolean reportFlag=this.configuration.getBool(CoreConstant.DATAX_CORE_JOB_REPORT_FLAG,true);
+        if(reportFlag){
+            String jobName = this.configuration.getString(CoreConstant.JOB_NAME,"");
+            if(StringUtils.isBlank(jobName)){
+                jobName = "JOB-"+this.jobId;
+            }
+            String noticeId=this.configuration.getString(CoreConstant.JOB_NOTICE_ID,"");
             map.put("notice_id",noticeId);
             map.put("job_name",jobName);
             map.put("job_id",this.jobId);
