@@ -28,6 +28,7 @@ import com.alibaba.datax.core.util.container.CoreConstant;
 import com.alibaba.datax.core.util.container.LoadUtil;
 import com.alibaba.datax.dataxservice.face.domain.enums.ExecuteMode;
 import com.alibaba.fastjson.JSON;
+import okhttp3.OkHttpClient;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.slf4j.Logger;
@@ -38,6 +39,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by jingxing on 14-8-24.
@@ -84,9 +89,10 @@ public class JobContainer extends AbstractContainer {
 
     private ErrorRecordChecker errorLimit;
 
+    private ScheduledExecutorService checkSelfKilledService;
+
     public JobContainer(Configuration configuration) {
         super(configuration);
-
         errorLimit = new ErrorRecordChecker(configuration);
     }
 
@@ -103,6 +109,14 @@ public class JobContainer extends AbstractContainer {
         sendNoticeMsg(new HashMap(){{
             put("type", CoreConstant.JOB_NOTICE_TYPE_START);
         }});
+
+        String killSelfCheckUrl = configuration.getString(CoreConstant.DATAX_CORE_KILL_SELF_CHECK_URL,"");
+        if(org.apache.commons.lang3.StringUtils.isNotBlank(killSelfCheckUrl)){
+            this.checkSelfKilledService = Executors.newSingleThreadScheduledExecutor();
+            this.checkSelfKilledService.scheduleWithFixedDelay(
+                    new CheckSelfKilledExecutor(this.configuration),1,1, TimeUnit.SECONDS
+            );
+        }
 
         boolean hasException = false;
         boolean isDryRun = false;
