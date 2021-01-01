@@ -100,5 +100,12 @@ public class Test {
         String dataId = readerNacosConfig.substring(1,readerNacosConfig.length());
         System.out.println(dataId);
 
+        String json = "{\"code\":\"0\",\"msg\":\"\",\"data\":1}";
+        Map<String,Object> paraConfig = gson.fromJson(json,Map.class);
+        System.out.println(json);
+
+        String testStr="[aaaa]";
+        System.out.println(testStr.substring(testStr.indexOf("[")+1,testStr.lastIndexOf("]")));
+
     }
 }

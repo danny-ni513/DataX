@@ -41,10 +41,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -1111,26 +1108,29 @@ public class JobContainer extends AbstractContainer {
             }});
             throw DataXException.asDataXException(FrameworkErrorCode.CONFIG_ERROR,"请求 nacos config 异常，任务初始化失败");
         }
+        LOG.info("FINAL CONFIG---------");
+        LOG.info(this.configuration.beautify());
     }
 
     private void initIdmRandomId(String idmRandomIdUrl){
         String idmIdTag = this.idmId.substring(this.idmId.indexOf(".")+1,this.idmId.lastIndexOf("."));
         String url="";
         if(this.idmId.endsWith(".CREATE]")){
-            url = MessageFormat.format(idmRandomIdUrl,"create",idmIdTag,System.currentTimeMillis());
+            url = MessageFormat.format(idmRandomIdUrl,"create",idmIdTag,new Random().nextInt(99));
         }else{
-            url = MessageFormat.format(idmRandomIdUrl,"get",idmIdTag,System.currentTimeMillis());
+            url = MessageFormat.format(idmRandomIdUrl,"get",idmIdTag,new Random().nextInt(99));
         }
         Request idmRandomIdRequest = new Request.Builder()
                 .url(url)
                 .build();
         try (Response idmRandomIdResponse = okHttpClient.newCall(idmRandomIdRequest).execute()) {
-            Configuration idmRandomIdConfig = Configuration.from(idmRandomIdResponse.body().toString());
-            if(CoreConstant.IDM_CONFIG_RESPONSE_SUCCESS_CODE.equals(idmRandomIdConfig.getString(CoreConstant.IDM_CONFIG_RESPONSE_CODE))){
-                this.idmId = idmRandomIdConfig.getString(CoreConstant.IDM_CONFIG_RESPONSE_DATA);
+            Gson gson = new GsonBuilder().create();
+            Map<String,Object> map = gson.fromJson(idmRandomIdResponse.body().string(),Map.class);
+            if(CoreConstant.IDM_CONFIG_RESPONSE_SUCCESS_CODE.equals(map.getOrDefault(CoreConstant.IDM_CONFIG_RESPONSE_CODE,"").toString())){
+                this.idmId = map.getOrDefault(CoreConstant.IDM_CONFIG_RESPONSE_DATA,"").toString();
                 this.configuration.set(CoreConstant.JOB_IDM_ID,this.idmId);
             }else{
-                LOG.warn("idmRandomIdResponse error ",idmRandomIdResponse.body().toString());
+                LOG.warn("idmRandomIdResponse error ",idmRandomIdResponse.body().string());
             }
         }catch (Exception idmRandomIdEx){
             LOG.warn("idmRandomIdResponse error ",idmRandomIdEx.getMessage());
@@ -1140,18 +1140,23 @@ public class JobContainer extends AbstractContainer {
     private void initIdmParaWithReaderFilterValue(String idmParaUrl,String readerFilterValue) throws DataXException {
         String paraTag = readerFilterValue.substring(readerFilterValue.indexOf(".")+1,readerFilterValue.lastIndexOf("."));
         String optTag = readerFilterValue.substring(readerFilterValue.lastIndexOf(".")+1,readerFilterValue.lastIndexOf("]"));
-        String url = MessageFormat.format(idmParaUrl,optTag.toLowerCase(),paraTag,System.currentTimeMillis());
+        String url = MessageFormat.format(idmParaUrl,optTag.toLowerCase(),paraTag,new Random().nextInt(99));
+        LOG.info("idmParaUrl =>[{}]",url);
         Request request = new Request.Builder()
                 .url(url)
                 .build();
         try (Response response = okHttpClient.newCall(request).execute()) {
-            Configuration paraConfig = Configuration.from(response.body().toString());
-            if(CoreConstant.IDM_CONFIG_RESPONSE_SUCCESS_CODE.equals(paraConfig.getString(CoreConstant.IDM_CONFIG_RESPONSE_CODE))){
-                String paraValue = paraConfig.getString(CoreConstant.IDM_CONFIG_RESPONSE_DATA);
+            Gson gson = new GsonBuilder().create();
+            String paraConfigStr = response.body().string();
+            LOG.info("paraConfig =>[{}]",paraConfigStr);
+            Map<String,Object> paraConfig = gson.fromJson(paraConfigStr,Map.class);
+            if(CoreConstant.IDM_CONFIG_RESPONSE_SUCCESS_CODE.equals(paraConfig.getOrDefault(CoreConstant.IDM_CONFIG_RESPONSE_CODE,"").toString())){
+                double paraValueDouble = (double)paraConfig.getOrDefault(CoreConstant.IDM_CONFIG_RESPONSE_DATA,0.0);
+                int paraValue = (int) paraValueDouble;
                 this.configuration.set(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_FILTER_VALUE,paraValue);
 
             }else{
-                LOG.error("getParaError error ",response.body().toString());
+                LOG.error("getParaError error ",response.body().string());
                 sendNoticeMsg(new HashMap(){{
                     put("type", CoreConstant.JOB_NOTICE_TYPE_INIT_ERROR);
                     put("msg","请求 PARA config 异常，任务初始化失败");
@@ -1159,7 +1164,8 @@ public class JobContainer extends AbstractContainer {
                 throw DataXException.asDataXException(FrameworkErrorCode.CONFIG_ERROR,"请求 PARA config 异常，任务初始化失败");
             }
         }catch (Exception ex){
-            LOG.error("getParaError error ",ex.getMessage());
+
+            LOG.error("getParaError error ",ex);
             sendNoticeMsg(new HashMap(){{
                 put("type", CoreConstant.JOB_NOTICE_TYPE_INIT_ERROR);
                 put("msg","请求 PARA config 异常，任务初始化失败");
@@ -1171,14 +1177,17 @@ public class JobContainer extends AbstractContainer {
     private Configuration fillPluginConfigWithNacos(Configuration pluginConfig){
         String pluginConfigNacos = pluginConfig.getString(CoreConstant.NACOS_CONFIG);
         if(StringUtils.isNotBlank(pluginConfigNacos) && pluginConfigNacos.startsWith("[") && pluginConfigNacos.endsWith("]")){
-            String nacosDataId = pluginConfigNacos.substring(1,pluginConfigNacos.length());
+            String nacosDataId = pluginConfigNacos.substring(pluginConfigNacos.indexOf("[")+1,pluginConfigNacos.lastIndexOf("]"));
             String url = MessageFormat.format(this.coreConfigServerUrl,nacosDataId);
+            LOG.info("fillPluginConfigWithNacosUrl=>[{}]",url);
             Gson gson = new GsonBuilder().create();
             Request request = new Request.Builder()
                     .url(url)
                     .build();
             try (Response response = okHttpClient.newCall(request).execute()) {
-                Map<String,Object> resMap = gson.fromJson(response.body().toString(),Map.class);
+                String resStr = response.body().string();
+                LOG.info("fillPluginConfigWithNacosResStr=>[{}]",resStr);
+                Map<String,Object> resMap = gson.fromJson(resStr,Map.class);
                 resMap.keySet().stream().forEach(key->{
                     pluginConfig.set(key,resMap.get(key));
                 });
