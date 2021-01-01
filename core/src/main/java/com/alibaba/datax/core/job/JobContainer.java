@@ -28,12 +28,18 @@ import com.alibaba.datax.core.util.container.CoreConstant;
 import com.alibaba.datax.core.util.container.LoadUtil;
 import com.alibaba.datax.dataxservice.face.domain.enums.ExecuteMode;
 import com.alibaba.fastjson.JSON;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,7 +51,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by jingxing on 14-8-24.
+ *
+ * @author jingxing
+ * @date 14-8-24
  * <p/>
  * job实例运行在jobContainer容器中，它是所有任务的master，负责初始化、拆分、调度、运行、回收、监控和汇报
  * 但它并不做实际的数据同步操作
@@ -61,6 +69,14 @@ public class JobContainer extends AbstractContainer {
             .newCurrentThreadClassLoaderSwapper();
 
     private long jobId;
+
+    private String idmId;
+
+    private String coreConfigServerUrl;
+
+    private boolean withNacos;
+
+    private  OkHttpClient okHttpClient;
 
     private String readerPluginName;
 
@@ -103,14 +119,22 @@ public class JobContainer extends AbstractContainer {
     @Override
     public void start() {
         LOG.info("DataX jobContainer starts job.");
+        this.idmId = this.configuration.getString(CoreConstant.JOB_IDM_ID,"");
+        this.withNacos = this.configuration.getBool(CoreConstant.JOB_WITH_NACOS,false);
+        this.coreConfigServerUrl = configuration.getString(CoreConstant.DATAX_CORE_CONFIG_SERVER_URL,"");
+        /** 如果配置中心URL是有效，则检查所有配置中是否存在"[xxx.xxx;IDM_PARA.XXX.GET/ADD/MINUS;IDM_ID.XXX.GET/CREATE]" **/
+        if(this.withNacos && StringUtils.isNotBlank(this.coreConfigServerUrl)
+                && (this.coreConfigServerUrl.startsWith("http://")||this.coreConfigServerUrl.startsWith("https://"))){
+            initConfigWithNacos();
+        }
 
         this.jobId = this.configuration.getLong(CoreConstant.DATAX_CORE_CONTAINER_JOB_ID,-1);
-
         sendNoticeMsg(new HashMap(){{
             put("type", CoreConstant.JOB_NOTICE_TYPE_START);
         }});
 
         String killSelfCheckUrl = configuration.getString(CoreConstant.DATAX_CORE_KILL_SELF_CHECK_URL,"");
+
         if(org.apache.commons.lang3.StringUtils.isNotBlank(killSelfCheckUrl)){
             this.checkSelfKilledService = Executors.newSingleThreadScheduledExecutor();
             this.checkSelfKilledService.scheduleWithFixedDelay(
@@ -1038,10 +1062,136 @@ public class JobContainer extends AbstractContainer {
             String noticeId=this.configuration.getString(CoreConstant.JOB_NOTICE_ID,"");
             map.put("notice_id",noticeId);
             map.put("job_name",jobName);
+            map.put("idm_id",this.idmId);
             map.put("job_id",this.jobId);
             map.put("now_timestamp",System.currentTimeMillis());
             String jsonInfo = JSON.toJSONString(map);
             LOG.error(jsonInfo);
         }
     }
+
+    /**
+     * 通过配置中心NACOS初始化整个任务配置文件
+     */
+    private void initConfigWithNacos() throws DataXException {
+        okHttpClient = new OkHttpClient();
+        String coreConfigUrl = MessageFormat.format(this.coreConfigServerUrl, "core");
+        Request request = new Request.Builder()
+                .url(coreConfigUrl)
+                .build();
+
+        try (Response response = okHttpClient.newCall(request).execute()) {
+            String coreConfigStr = response.body().string();
+            Configuration nacosCoreConfig = Configuration.from(coreConfigStr);
+            String idmParaUrl = nacosCoreConfig.getString(CoreConstant.NACOS_CORE_IDM_PARA_URL);
+            String idmRandomIdUrl = nacosCoreConfig.getString(CoreConstant.NACOS_CORE_IDM_RANDOM_ID_URL);
+            if(StringUtils.isNotBlank(this.idmId) && this.idmId.startsWith("[IDM_ID.")&&this.idmId.endsWith("]")){
+                initIdmRandomId(idmRandomIdUrl);
+            }
+            //目前仅支持 content[0].reader.parameter.filter.value
+            String readerFilterValue = this.configuration.getString(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_FILTER_VALUE,"");
+            if(StringUtils.isNotBlank(readerFilterValue) && readerFilterValue.startsWith("[IDM_PARA.")
+                    && readerFilterValue.endsWith("]")){
+                this.initIdmParaWithReaderFilterValue(idmParaUrl,readerFilterValue);
+            }
+
+            //READER 进行处理
+            Configuration readerConfig = this.configuration.getConfiguration(CoreConstant.JOB_CONTENT_0_READER_PARAMETER);
+            Configuration finalReaderConfig = fillPluginConfigWithNacos(readerConfig);
+            this.configuration.set(CoreConstant.JOB_CONTENT_0_READER_PARAMETER,finalReaderConfig);
+            //WRITER 进行处理
+            Configuration writerConfig = this.configuration.getConfiguration(CoreConstant.JOB_CONTENT_0_WRITER_PARAMETER);
+            Configuration finalWriterConfig = fillPluginConfigWithNacos(writerConfig);
+            this.configuration.set(CoreConstant.JOB_CONTENT_0_WRITER_PARAMETER,finalWriterConfig);
+
+        }catch (Exception ex){
+            sendNoticeMsg(new HashMap(){{
+                put("type", CoreConstant.JOB_NOTICE_TYPE_INIT_ERROR);
+                put("msg","请求 nacos config 异常，任务初始化失败");
+            }});
+            throw DataXException.asDataXException(FrameworkErrorCode.CONFIG_ERROR,"请求 nacos config 异常，任务初始化失败");
+        }
+    }
+
+    private void initIdmRandomId(String idmRandomIdUrl){
+        String idmIdTag = this.idmId.substring(this.idmId.indexOf(".")+1,this.idmId.lastIndexOf("."));
+        String url="";
+        if(this.idmId.endsWith(".CREATE]")){
+            url = MessageFormat.format(idmRandomIdUrl,"create",idmIdTag,System.currentTimeMillis());
+        }else{
+            url = MessageFormat.format(idmRandomIdUrl,"get",idmIdTag,System.currentTimeMillis());
+        }
+        Request idmRandomIdRequest = new Request.Builder()
+                .url(url)
+                .build();
+        try (Response idmRandomIdResponse = okHttpClient.newCall(idmRandomIdRequest).execute()) {
+            Configuration idmRandomIdConfig = Configuration.from(idmRandomIdResponse.body().toString());
+            if(CoreConstant.IDM_CONFIG_RESPONSE_SUCCESS_CODE.equals(idmRandomIdConfig.getString(CoreConstant.IDM_CONFIG_RESPONSE_CODE))){
+                this.idmId = idmRandomIdConfig.getString(CoreConstant.IDM_CONFIG_RESPONSE_DATA);
+                this.configuration.set(CoreConstant.JOB_IDM_ID,this.idmId);
+            }else{
+                LOG.warn("idmRandomIdResponse error ",idmRandomIdResponse.body().toString());
+            }
+        }catch (Exception idmRandomIdEx){
+            LOG.warn("idmRandomIdResponse error ",idmRandomIdEx.getMessage());
+        }
+    }
+
+    private void initIdmParaWithReaderFilterValue(String idmParaUrl,String readerFilterValue) throws DataXException {
+        String paraTag = readerFilterValue.substring(readerFilterValue.indexOf(".")+1,readerFilterValue.lastIndexOf("."));
+        String optTag = readerFilterValue.substring(readerFilterValue.lastIndexOf(".")+1,readerFilterValue.lastIndexOf("]"));
+        String url = MessageFormat.format(idmParaUrl,optTag.toLowerCase(),paraTag,System.currentTimeMillis());
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+        try (Response response = okHttpClient.newCall(request).execute()) {
+            Configuration paraConfig = Configuration.from(response.body().toString());
+            if(CoreConstant.IDM_CONFIG_RESPONSE_SUCCESS_CODE.equals(paraConfig.getString(CoreConstant.IDM_CONFIG_RESPONSE_CODE))){
+                String paraValue = paraConfig.getString(CoreConstant.IDM_CONFIG_RESPONSE_DATA);
+                this.configuration.set(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_FILTER_VALUE,paraValue);
+
+            }else{
+                LOG.error("getParaError error ",response.body().toString());
+                sendNoticeMsg(new HashMap(){{
+                    put("type", CoreConstant.JOB_NOTICE_TYPE_INIT_ERROR);
+                    put("msg","请求 PARA config 异常，任务初始化失败");
+                }});
+                throw DataXException.asDataXException(FrameworkErrorCode.CONFIG_ERROR,"请求 PARA config 异常，任务初始化失败");
+            }
+        }catch (Exception ex){
+            LOG.error("getParaError error ",ex.getMessage());
+            sendNoticeMsg(new HashMap(){{
+                put("type", CoreConstant.JOB_NOTICE_TYPE_INIT_ERROR);
+                put("msg","请求 PARA config 异常，任务初始化失败");
+            }});
+            throw DataXException.asDataXException(FrameworkErrorCode.CONFIG_ERROR,"请求 PARA config 异常，任务初始化失败");
+        }
+    }
+
+    private Configuration fillPluginConfigWithNacos(Configuration pluginConfig){
+        String pluginConfigNacos = pluginConfig.getString(CoreConstant.NACOS_CONFIG);
+        if(StringUtils.isNotBlank(pluginConfigNacos) && pluginConfigNacos.startsWith("[") && pluginConfigNacos.endsWith("]")){
+            String nacosDataId = pluginConfigNacos.substring(1,pluginConfigNacos.length());
+            String url = MessageFormat.format(this.coreConfigServerUrl,nacosDataId);
+            Gson gson = new GsonBuilder().create();
+            Request request = new Request.Builder()
+                    .url(url)
+                    .build();
+            try (Response response = okHttpClient.newCall(request).execute()) {
+                Map<String,Object> resMap = gson.fromJson(response.body().toString(),Map.class);
+                resMap.keySet().stream().forEach(key->{
+                    pluginConfig.set(key,resMap.get(key));
+                });
+            }catch (Exception ex){
+                LOG.error("get NACOS PLUGIN CONFIG error ",ex.getMessage());
+                sendNoticeMsg(new HashMap(){{
+                    put("type", CoreConstant.JOB_NOTICE_TYPE_INIT_ERROR);
+                    put("msg","请求nacos获取"+nacosDataId+"异常，任务初始化失败");
+                }});
+                throw DataXException.asDataXException(FrameworkErrorCode.CONFIG_ERROR,"请求nacos获取"+nacosDataId+"异常，任务初始化失败");
+            }
+        }
+        return pluginConfig;
+    }
+
 }

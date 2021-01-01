@@ -21,12 +21,16 @@ import java.util.List;
 import java.util.Map;
 
 
+/**
+ * @author danny_ni
+ */
 public class StandAloneJobContainerCommunicator extends AbstractContainerCommunicator {
     private static final Logger LOG = LoggerFactory
             .getLogger(StandAloneJobContainerCommunicator.class);
 
     private boolean reportFlag;
     private String jobName;
+    private String idmId;
 
     public StandAloneJobContainerCommunicator(Configuration configuration) {
         super(configuration);
@@ -34,7 +38,8 @@ public class StandAloneJobContainerCommunicator extends AbstractContainerCommuni
                 CoreConstant.DATAX_CORE_CONTAINER_JOB_ID)));
         super.setReporter(new ProcessInnerReporter());
         this.reportFlag = configuration.getBool(CoreConstant.DATAX_CORE_JOB_REPORT_FLAG,true);
-        this.jobName = configuration.getString(CoreConstant.JOB_NAME,"");
+        this.jobName = configuration.getString(CoreConstant.JOB_NAME,"JOB-"+this.getJobId());
+        this.idmId = configuration.getString(CoreConstant.JOB_IDM_ID,"");
     }
 
     @Override
@@ -68,6 +73,7 @@ public class StandAloneJobContainerCommunicator extends AbstractContainerCommuni
         if(this.reportFlag){
             Map<String,Object> map = new HashMap<>(13);
             map.put("job_name",this.jobName);
+            map.put("idm_id",this.idmId);
             map.put("job_id",this.getJobId());
             map.put("now_timestamp",System.currentTimeMillis());
             map.putAll(CommunicationTool.Stringify.getSnapshotMap(communication));

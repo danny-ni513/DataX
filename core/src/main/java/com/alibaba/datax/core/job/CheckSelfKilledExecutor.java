@@ -27,6 +27,7 @@ public class CheckSelfKilledExecutor implements Runnable{
     private String jobName;
     private boolean reportFlag;
     private long jobId;
+    private String idmId;
     private Configuration configuration;
 
     public CheckSelfKilledExecutor(Configuration configuration){
@@ -38,6 +39,7 @@ public class CheckSelfKilledExecutor implements Runnable{
         }
         this.reportFlag = configuration.getBool(CoreConstant.DATAX_CORE_JOB_REPORT_FLAG,true);
         this.jobName = configuration.getString(CoreConstant.JOB_NAME,"JOB-"+this.jobId);
+        this.idmId = configuration.getString(CoreConstant.JOB_IDM_ID,"");
     }
 
     @Override
@@ -65,6 +67,7 @@ public class CheckSelfKilledExecutor implements Runnable{
                         reportMap.put("notice_id", noticeId);
                         reportMap.put("job_name", this.jobName);
                         reportMap.put("job_id", this.jobId);
+                        reportMap.put("idm_id",this.idmId);
                         reportMap.put("type", CoreConstant.JOB_NOTICE_TYPE_KILLED);
                         reportMap.put("now_timestamp", System.currentTimeMillis());
                         String jsonInfo = JSON.toJSONString(reportMap);

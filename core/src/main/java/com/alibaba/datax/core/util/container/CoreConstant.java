@@ -197,7 +197,19 @@ public class CoreConstant {
 
 	public final static String JOB_NAME = "job.name";
 
+	public final static String JOB_IDM_ID = "job.idmId";
+	public final static String JOB_WITH_NACOS = "job.withNacos";
 
+	public final static String NACOS_CORE_IDM_PARA_URL = "idm_para_url";
+	public final static String NACOS_CORE_IDM_RANDOM_ID_URL = "idm_random_id_url";
+	public final static String IDM_CONFIG_RESPONSE_SUCCESS_CODE = "0";
+	public final static String IDM_CONFIG_RESPONSE_CODE = "code";
+	public final static String IDM_CONFIG_RESPONSE_DATA = "data";
+
+	public final static String JOB_CONTENT_0_READER_PARAMETER_FILTER_VALUE="job.content[0].reader.parameter.filter.value";
+	public final static String JOB_CONTENT_0_READER_PARAMETER = "job.content[0].reader.parameter";
+	public final static String JOB_CONTENT_0_WRITER_PARAMETER = "job.content[0].writer.parameter";
+	public final static String NACOS_CONFIG = "nacosConfig"; //"hbaseProd"
 
 	public final static String JOB_NOTICE_TYPE_INIT_ERROR = "DATAX-INIT-ERROR";
 	public final static String JOB_NOTICE_TYPE_START = "DATAX-START";
