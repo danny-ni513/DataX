@@ -104,6 +104,8 @@ public class JobContainer extends AbstractContainer {
 
     private ScheduledExecutorService checkSelfKilledService;
 
+    private Gson readGson ;//= new GsonBuilder().create()
+
     public JobContainer(Configuration configuration) {
         super(configuration);
         errorLimit = new ErrorRecordChecker(configuration);
@@ -122,6 +124,7 @@ public class JobContainer extends AbstractContainer {
         /** 如果配置中心URL是有效，则检查所有配置中是否存在"[xxx.xxx;IDM_PARA.XXX.GET/ADD/MINUS;IDM_ID.XXX.GET/CREATE]" **/
         if(this.withNacos && StringUtils.isNotBlank(this.coreConfigServerUrl)
                 && (this.coreConfigServerUrl.startsWith("http://")||this.coreConfigServerUrl.startsWith("https://"))){
+            readGson = new GsonBuilder().create();
             initConfigWithNacos();
         }
 
@@ -1124,8 +1127,9 @@ public class JobContainer extends AbstractContainer {
                 .url(url)
                 .build();
         try (Response idmRandomIdResponse = okHttpClient.newCall(idmRandomIdRequest).execute()) {
-            Gson gson = new GsonBuilder().create();
-            Map<String,Object> map = gson.fromJson(idmRandomIdResponse.body().string(),Map.class);
+            String idmRandomIdResponseBody = idmRandomIdResponse.body().string();
+            LOG.info("idmRandomIdResponseBody=>[{}]",idmRandomIdResponseBody);
+            Map<String,Object> map = readGson.fromJson(idmRandomIdResponseBody,Map.class);
             if(CoreConstant.IDM_CONFIG_RESPONSE_SUCCESS_CODE.equals(map.getOrDefault(CoreConstant.IDM_CONFIG_RESPONSE_CODE,"").toString())){
                 this.idmId = map.getOrDefault(CoreConstant.IDM_CONFIG_RESPONSE_DATA,"").toString();
                 this.configuration.set(CoreConstant.JOB_IDM_ID,this.idmId);
@@ -1146,22 +1150,27 @@ public class JobContainer extends AbstractContainer {
                 .url(url)
                 .build();
         try (Response response = okHttpClient.newCall(request).execute()) {
-            Gson gson = new GsonBuilder().create();
             String paraConfigStr = response.body().string();
             LOG.info("paraConfig =>[{}]",paraConfigStr);
-            Map<String,Object> paraConfig = gson.fromJson(paraConfigStr,Map.class);
+            Map<String,Object> paraConfig = readGson.fromJson(paraConfigStr,Map.class);
             if(CoreConstant.IDM_CONFIG_RESPONSE_SUCCESS_CODE.equals(paraConfig.getOrDefault(CoreConstant.IDM_CONFIG_RESPONSE_CODE,"").toString())){
-                double paraValueDouble = (double)paraConfig.getOrDefault(CoreConstant.IDM_CONFIG_RESPONSE_DATA,0.0);
-                int paraValue = (int) paraValueDouble;
+                String paraValueString = paraConfig.getOrDefault(CoreConstant.IDM_CONFIG_RESPONSE_DATA,"").toString();
+                Object paraValue = null;
+                if(StringUtils.isNumeric(paraValueString)){
+                    Double paraValueDouble = Double.parseDouble(paraValueString);
+                    paraValue = paraValueDouble.intValue();
+                }else{
+                    paraValue = paraValueString;
+                }
                 this.configuration.set(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_FILTER_VALUE,paraValue);
 
             }else{
-                LOG.error("getParaError error ",response.body().string());
+                LOG.warn("getParaError error ",paraConfigStr);
                 sendNoticeMsg(new HashMap(){{
                     put("type", CoreConstant.JOB_NOTICE_TYPE_INIT_ERROR);
-                    put("msg","请求 PARA config 异常，任务初始化失败");
+                    put("msg","请求 PARA config 异常，任务初始化失败,json=>"+paraConfigStr);
                 }});
-                throw DataXException.asDataXException(FrameworkErrorCode.CONFIG_ERROR,"请求 PARA config 异常，任务初始化失败");
+                throw DataXException.asDataXException(FrameworkErrorCode.CONFIG_ERROR,"请求 PARA config 异常，任务初始化失败,json=>"+paraConfigStr);
             }
         }catch (Exception ex){
 
@@ -1180,14 +1189,14 @@ public class JobContainer extends AbstractContainer {
             String nacosDataId = pluginConfigNacos.substring(pluginConfigNacos.indexOf("[")+1,pluginConfigNacos.lastIndexOf("]"));
             String url = MessageFormat.format(this.coreConfigServerUrl,nacosDataId);
             LOG.info("fillPluginConfigWithNacosUrl=>[{}]",url);
-            Gson gson = new GsonBuilder().create();
+
             Request request = new Request.Builder()
                     .url(url)
                     .build();
             try (Response response = okHttpClient.newCall(request).execute()) {
                 String resStr = response.body().string();
                 LOG.info("fillPluginConfigWithNacosResStr=>[{}]",resStr);
-                Map<String,Object> resMap = gson.fromJson(resStr,Map.class);
+                Map<String,Object> resMap = readGson.fromJson(resStr,Map.class);
                 resMap.keySet().stream().forEach(key->{
                     pluginConfig.set(key,resMap.get(key));
                 });
