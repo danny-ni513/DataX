@@ -216,4 +216,7 @@ public class CoreConstant {
 	public final static String JOB_NOTICE_TYPE_FINISH = "DATAX-FINISH";
 	public final static String JOB_NOTICE_TYPE_KILLED = "DATAX-KILLED";
 
+	public final static String NUMBER_DOT = "\\.";
+	public final static String STRING_DOT = ".";
+
 }

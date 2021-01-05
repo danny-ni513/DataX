@@ -67,6 +67,8 @@ public class JobContainer extends AbstractContainer {
 
     private long jobId;
 
+    private String jobName;
+
     private String idmId;
 
     private String coreConfigServerUrl;
@@ -118,6 +120,8 @@ public class JobContainer extends AbstractContainer {
     @Override
     public void start() {
         LOG.info("DataX jobContainer starts job.");
+        this.jobId = this.configuration.getLong(CoreConstant.DATAX_CORE_CONTAINER_JOB_ID,-1);
+        this.jobName = this.configuration.getString(CoreConstant.JOB_NAME,"JOB-"+this.jobId);
         this.idmId = this.configuration.getString(CoreConstant.JOB_IDM_ID,"");
         this.withNacos = this.configuration.getBool(CoreConstant.JOB_WITH_NACOS,false);
         this.coreConfigServerUrl = configuration.getString(CoreConstant.DATAX_CORE_CONFIG_SERVER_URL,"");
@@ -1055,7 +1059,7 @@ public class JobContainer extends AbstractContainer {
     private void sendNoticeMsg(Map map){
         boolean reportFlag=this.configuration.getBool(CoreConstant.DATAX_CORE_JOB_REPORT_FLAG,true);
         if(reportFlag){
-            String jobName = this.configuration.getString(CoreConstant.JOB_NAME,"");
+
             if(StringUtils.isBlank(jobName)){
                 jobName = "JOB-"+this.jobId;
             }
@@ -1088,11 +1092,21 @@ public class JobContainer extends AbstractContainer {
             if(StringUtils.isNotBlank(this.idmId) && this.idmId.startsWith("[IDM_ID.")&&this.idmId.endsWith("]")){
                 initIdmRandomId(idmRandomIdUrl);
             }
-            //目前仅支持 content[0].reader.parameter.filter.value
+            //目前仅支持 content[0].reader.parameter.filter.value 和jobName
             String readerFilterValue = this.configuration.getString(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_FILTER_VALUE,"");
             if(StringUtils.isNotBlank(readerFilterValue) && readerFilterValue.startsWith("[IDM_PARA.")
                     && readerFilterValue.endsWith("]")){
-                this.initIdmParaWithReaderFilterValue(idmParaUrl,readerFilterValue);
+                Object paraValue = this.getIdmParaValue(idmParaUrl,readerFilterValue);
+                this.configuration.set(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_FILTER_VALUE,paraValue);
+            }
+
+            if(StringUtils.isNotBlank(this.jobName) && this.jobName.contains("[IDM_PARA.")
+                    && this.jobName.contains("]")){
+                String paraJobName = this.jobName.substring(this.jobName.indexOf("[IDM_PARA."),this.jobName.lastIndexOf("]")+1);
+                Object paraValue = this.getIdmParaValue(idmParaUrl,paraJobName);
+                this.jobName = this.jobName.replace(paraJobName,paraValue.toString());
+
+                this.configuration.set(CoreConstant.JOB_NAME,this.jobName);
             }
 
             //READER 进行处理
@@ -1141,10 +1155,10 @@ public class JobContainer extends AbstractContainer {
         }
     }
 
-    private void initIdmParaWithReaderFilterValue(String idmParaUrl,String readerFilterValue) throws DataXException {
-        String paraTag = readerFilterValue.substring(readerFilterValue.indexOf(".")+1,readerFilterValue.lastIndexOf("."));
-        String optTag = readerFilterValue.substring(readerFilterValue.lastIndexOf(".")+1,readerFilterValue.lastIndexOf("]"));
-        String url = MessageFormat.format(idmParaUrl,optTag.toLowerCase(),paraTag,new Random().nextInt(99));
+    private Object getIdmParaValue(String idmParaUrl,String paraInfo) throws DataXException {
+        String paraTag = paraInfo.substring(paraInfo.indexOf(".")+1,paraInfo.lastIndexOf("."));
+        String optTag = paraInfo.substring(paraInfo.lastIndexOf(".")+1,paraInfo.lastIndexOf("]"));
+        String url = MessageFormat.format(idmParaUrl,optTag,paraTag,new Random().nextInt(99));
         LOG.info("idmParaUrl =>[{}]",url);
         Request request = new Request.Builder()
                 .url(url)
@@ -1154,16 +1168,27 @@ public class JobContainer extends AbstractContainer {
             LOG.info("paraConfig =>[{}]",paraConfigStr);
             Map<String,Object> paraConfig = readGson.fromJson(paraConfigStr,Map.class);
             if(CoreConstant.IDM_CONFIG_RESPONSE_SUCCESS_CODE.equals(paraConfig.getOrDefault(CoreConstant.IDM_CONFIG_RESPONSE_CODE,"").toString())){
-                String paraValueString = paraConfig.getOrDefault(CoreConstant.IDM_CONFIG_RESPONSE_DATA,"").toString();
+                String paraValueStr = paraConfig.getOrDefault(CoreConstant.IDM_CONFIG_RESPONSE_DATA,"").toString();
                 Object paraValue = null;
-                if(StringUtils.isNumeric(paraValueString)){
-                    Double paraValueDouble = Double.parseDouble(paraValueString);
-                    paraValue = paraValueDouble.intValue();
+                if(StringUtils.isNotBlank(paraValueStr)&&StringUtils.isNumeric(paraValueStr)){
+                    Long tmpLong =Long.parseLong(paraValueStr);
+                    if(tmpLong<Integer.MAX_VALUE){
+                        paraValue = tmpLong.intValue();
+                    }else{
+                        paraValue = tmpLong;
+                    }
+                }else if(paraValueStr.contains(CoreConstant.STRING_DOT)&&paraValueStr.split(CoreConstant.NUMBER_DOT).length==2){
+                    if(StringUtils.isNumeric(paraValueStr.split(CoreConstant.NUMBER_DOT)[0])
+                            &&StringUtils.isNumeric(paraValueStr.split(CoreConstant.NUMBER_DOT)[1])){
+                        Double paraValueDouble = Double.parseDouble(paraValueStr);
+                        paraValue = paraValueDouble.intValue();
+                    }else{
+                        paraValue = paraValueStr;
+                    }
                 }else{
-                    paraValue = paraValueString;
+                    paraValue = paraValueStr;
                 }
-                this.configuration.set(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_FILTER_VALUE,paraValue);
-
+                return paraValue;
             }else{
                 LOG.warn("getParaError error ",paraConfigStr);
                 sendNoticeMsg(new HashMap(){{
