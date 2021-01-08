@@ -209,6 +209,10 @@ public class CoreConstant {
 	public final static String JOB_CONTENT_0_READER_PARAMETER_FILTER_VALUE="job.content[0].reader.parameter.filter.value";
 	public final static String JOB_CONTENT_0_READER_PARAMETER = "job.content[0].reader.parameter";
 	public final static String JOB_CONTENT_0_WRITER_PARAMETER = "job.content[0].writer.parameter";
+	public final static String JOB_CONTENT_0_READER_PARAMETER_WHERE = "job.content[0].reader.parameter.where";
+	public final static String JOB_CONTENT_0_READER_PARAMETER_CONNECTION = "job.content[0].reader.parameter.connection";
+	public final static String QUERY_SQL = "querySql";
+
 	public final static String NACOS_CONFIG = "nacosConfig"; //"hbaseProd"
 
 	public final static String JOB_NOTICE_TYPE_INIT_ERROR = "DATAX-INIT-ERROR";

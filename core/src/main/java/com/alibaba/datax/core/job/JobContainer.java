@@ -28,6 +28,7 @@ import com.alibaba.datax.core.util.container.CoreConstant;
 import com.alibaba.datax.core.util.container.LoadUtil;
 import com.alibaba.datax.dataxservice.face.domain.enums.ExecuteMode;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import okhttp3.OkHttpClient;
@@ -46,6 +47,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -1092,7 +1094,7 @@ public class JobContainer extends AbstractContainer {
             if(StringUtils.isNotBlank(this.idmId) && this.idmId.startsWith("[IDM_ID.")&&this.idmId.endsWith("]")){
                 initIdmRandomId(idmRandomIdUrl);
             }
-            //目前仅支持 content[0].reader.parameter.filter.value 和jobName
+            //目前仅支持 content[0].reader.parameter.filter.value 和jobName ,
             String readerFilterValue = this.configuration.getString(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_FILTER_VALUE,"");
             if(StringUtils.isNotBlank(readerFilterValue) && readerFilterValue.startsWith("[IDM_PARA.")
                     && readerFilterValue.endsWith("]")){
@@ -1109,6 +1111,57 @@ public class JobContainer extends AbstractContainer {
                 this.configuration.set(CoreConstant.JOB_NAME,this.jobName);
             }
 
+            LOG.warn("======1======");
+            //content[0].reader.parameter.where
+            if(StringUtils.isNotBlank(this.configuration.getString(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_WHERE
+                    ,""))
+                    && this.configuration.getString(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_WHERE
+                    ,"").contains("[IDM_PARA.")
+                    && this.configuration.getString(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_WHERE
+                    ,"").contains("]")){
+                String whereStr = this.configuration.getString(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_WHERE
+                        ,"");
+                String wherePara = whereStr.substring(whereStr.indexOf("[IDM_PARA."),whereStr.lastIndexOf("]")+1);
+                Object paraValue = this.getIdmParaValue(idmParaUrl,wherePara);
+                whereStr = whereStr.replace(wherePara,paraValue.toString());
+                this.configuration.set(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_WHERE,whereStr);
+            }
+            LOG.warn("======2======");
+
+            if(this.configuration.get(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_CONNECTION)!=null){
+                List<Configuration> connectionList = this.configuration
+                        .getListConfiguration(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_CONNECTION);
+
+                LOG.warn("======2.0======connection,size=[{}]",connectionList.size());
+                List<Configuration> newConnectionList = connectionList.stream().map(connection->{
+                    LOG.warn("======2.1======");
+                    LOG.warn(connection.beautify());
+                    Configuration newConnection = connection;
+                  if(connection.get(CoreConstant.QUERY_SQL)!=null){
+                      List<String> querySqls = connection.getList(CoreConstant.QUERY_SQL,String.class);
+                      LOG.warn("======2.2======");
+                      LOG.warn(querySqls.toString());
+                      List<String> newQuerySqls = querySqls.stream().map(sql->{
+                          if(sql.contains("[IDM_PARA.")&&sql.contains("]")){
+                              String paraTag = sql.substring(sql.indexOf("[IDM_PARA."),sql.lastIndexOf("]")+1);
+                              Object paraValue = this.getIdmParaValue(idmParaUrl,paraTag);
+                              String newSql = sql.replace(paraTag,paraValue.toString());
+                              return newSql;
+                          }else{
+                             return sql;
+                          }
+                      }).collect(Collectors.toList());
+                      newConnection.set(CoreConstant.QUERY_SQL,newQuerySqls);
+                      return newConnection;
+                  }else{
+                      return connection;
+                  }
+                }).collect(Collectors.toList());
+                this.configuration.set(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_CONNECTION,newConnectionList);
+            }
+
+            LOG.warn("======3======");
+
             //READER 进行处理
             Configuration readerConfig = this.configuration.getConfiguration(CoreConstant.JOB_CONTENT_0_READER_PARAMETER);
             Configuration finalReaderConfig = fillPluginConfigWithNacos(readerConfig);
@@ -1119,14 +1172,15 @@ public class JobContainer extends AbstractContainer {
             this.configuration.set(CoreConstant.JOB_CONTENT_0_WRITER_PARAMETER,finalWriterConfig);
 
         }catch (Exception ex){
+            ex.printStackTrace();
             sendNoticeMsg(new HashMap(){{
                 put("type", CoreConstant.JOB_NOTICE_TYPE_INIT_ERROR);
                 put("msg","请求 nacos config 异常，任务初始化失败");
             }});
             throw DataXException.asDataXException(FrameworkErrorCode.CONFIG_ERROR,"请求 nacos config 异常，任务初始化失败");
         }
-        LOG.info("FINAL CONFIG---------");
-        LOG.info(this.configuration.beautify());
+        LOG.warn("FINAL CONFIG---------");
+        LOG.warn(this.configuration.beautify());
     }
 
     private void initIdmRandomId(String idmRandomIdUrl){
