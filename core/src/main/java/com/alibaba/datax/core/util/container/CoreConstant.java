@@ -212,6 +212,8 @@ public class CoreConstant {
 	public final static String JOB_CONTENT_0_READER_PARAMETER_WHERE = "job.content[0].reader.parameter.where";
 	public final static String JOB_CONTENT_0_READER_PARAMETER_CONNECTION = "job.content[0].reader.parameter.connection";
 	public final static String QUERY_SQL = "querySql";
+	public final static String JOB_CONTENT_0_WRITER_PARAMETER_PRE_SQL = "job.content[0].writer.parameter.preSql";
+	public final static String JOB_CONTENT_0_WRITER_PARAMETER_POST_SQL = "job.content[0].writer.parameter.postSql";
 
 	public final static String NACOS_CONFIG = "nacosConfig"; //"hbaseProd"
 

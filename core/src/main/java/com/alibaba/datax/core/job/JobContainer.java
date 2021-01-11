@@ -1127,7 +1127,7 @@ public class JobContainer extends AbstractContainer {
                 this.configuration.set(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_WHERE,whereStr);
             }
             LOG.warn("======2======");
-
+            //querysql
             if(this.configuration.get(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_CONNECTION)!=null){
                 List<Configuration> connectionList = this.configuration
                         .getListConfiguration(CoreConstant.JOB_CONTENT_0_READER_PARAMETER_CONNECTION);
@@ -1141,16 +1141,7 @@ public class JobContainer extends AbstractContainer {
                       List<String> querySqls = connection.getList(CoreConstant.QUERY_SQL,String.class);
                       LOG.warn("======2.2======");
                       LOG.warn(querySqls.toString());
-                      List<String> newQuerySqls = querySqls.stream().map(sql->{
-                          if(sql.contains("[IDM_PARA.")&&sql.contains("]")){
-                              String paraTag = sql.substring(sql.indexOf("[IDM_PARA."),sql.lastIndexOf("]")+1);
-                              Object paraValue = this.getIdmParaValue(idmParaUrl,paraTag);
-                              String newSql = sql.replace(paraTag,paraValue.toString());
-                              return newSql;
-                          }else{
-                             return sql;
-                          }
-                      }).collect(Collectors.toList());
+                      List<String> newQuerySqls = fillSqlsByIdmPara(querySqls,idmParaUrl);
                       newConnection.set(CoreConstant.QUERY_SQL,newQuerySqls);
                       return newConnection;
                   }else{
@@ -1161,7 +1152,20 @@ public class JobContainer extends AbstractContainer {
             }
 
             LOG.warn("======3======");
-
+            //WRITER_PRESQL
+            if(this.configuration.get(CoreConstant.JOB_CONTENT_0_WRITER_PARAMETER_PRE_SQL)!=null){
+                List<String> preSqls = this.configuration
+                        .getList(CoreConstant.JOB_CONTENT_0_WRITER_PARAMETER_PRE_SQL,String.class);
+                List<String> newPreSqls = fillSqlsByIdmPara(preSqls,idmParaUrl);
+                this.configuration.set(CoreConstant.JOB_CONTENT_0_WRITER_PARAMETER_PRE_SQL,newPreSqls);
+            }
+            //WRITER_POST_SQL
+            if(this.configuration.get(CoreConstant.JOB_CONTENT_0_WRITER_PARAMETER_POST_SQL)!=null){
+                List<String> postSqls = this.configuration
+                        .getList(CoreConstant.JOB_CONTENT_0_WRITER_PARAMETER_POST_SQL,String.class);
+                List<String> newPostSqls = fillSqlsByIdmPara(postSqls,idmParaUrl);
+                this.configuration.set(CoreConstant.JOB_CONTENT_0_WRITER_PARAMETER_POST_SQL,newPostSqls);
+            }
             //READER 进行处理
             Configuration readerConfig = this.configuration.getConfiguration(CoreConstant.JOB_CONTENT_0_READER_PARAMETER);
             Configuration finalReaderConfig = fillPluginConfigWithNacos(readerConfig);
@@ -1289,6 +1293,19 @@ public class JobContainer extends AbstractContainer {
             }
         }
         return pluginConfig;
+    }
+
+    private List<String> fillSqlsByIdmPara(List<String> sqls,String idmParaUrl){
+        return sqls.stream().map(sql->{
+            if(sql.contains("[IDM_PARA.")&&sql.contains("]")){
+                String paraTag = sql.substring(sql.indexOf("[IDM_PARA."),sql.lastIndexOf("]")+1);
+                Object paraValue = this.getIdmParaValue(idmParaUrl,paraTag);
+                String newSql = sql.replace(paraTag,paraValue.toString());
+                return newSql;
+            }else{
+                return sql;
+            }
+        }).collect(Collectors.toList());
     }
 
 }
