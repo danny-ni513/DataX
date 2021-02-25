@@ -1166,6 +1166,43 @@ public class JobContainer extends AbstractContainer {
                 List<String> newPostSqls = fillSqlsByIdmPara(postSqls,idmParaUrl);
                 this.configuration.set(CoreConstant.JOB_CONTENT_0_WRITER_PARAMETER_POST_SQL,newPostSqls);
             }
+
+            /** WRITER COLUMN TYPE IS CONST THEN VALUE CONTAINS "[]" */
+            if(this.configuration.get(CoreConstant.JOB_CONTENT_0_WRITER_PARAMETER_COLUMN)!=null){
+                List<Object> writerColumns = this.configuration.getList(
+                        CoreConstant.JOB_CONTENT_0_WRITER_PARAMETER_COLUMN);
+                List<Object> newWriterColumns = new ArrayList<>(writerColumns.size());
+                for(Object writerColumn: writerColumns){
+                    Object newWriterColumn = writerColumn;
+                    if(writerColumn instanceof Map){
+                        Map<String,Object> columnMap = (Map<String, Object>) writerColumn;
+                        if(columnMap.get(CoreConstant.TYPE)!=null){
+                            String type = (String)columnMap.get(CoreConstant.TYPE);
+                            if(CoreConstant.CONST.equalsIgnoreCase(type)
+                                    ||CoreConstant.WHERE_CONST.equalsIgnoreCase(type)
+                                    ||CoreConstant.CONST_DATE.equalsIgnoreCase(type)
+                                    ||CoreConstant.WHERE_CONST_DATE.equalsIgnoreCase(type)){
+                                if(columnMap.get(CoreConstant.VALUE)!=null){
+                                    if(columnMap.get(CoreConstant.VALUE) instanceof String){
+                                        String value = (String)columnMap.get(CoreConstant.VALUE);
+                                        if(value.startsWith("[IDM_ID.")&&value.endsWith("]")){
+                                            /** 转换 */
+                                            Object paraValue = this.getIdmParaValue(idmParaUrl,value);
+                                            columnMap.put(CoreConstant.VALUE,paraValue);
+                                            newWriterColumn = columnMap;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    newWriterColumns.add(newWriterColumn);
+                }
+                /** 回填 */
+                this.configuration.set(CoreConstant.JOB_CONTENT_0_WRITER_PARAMETER_COLUMN,newWriterColumns);
+            }
+
             //READER 进行处理
             Configuration readerConfig = this.configuration.getConfiguration(CoreConstant.JOB_CONTENT_0_READER_PARAMETER);
             Configuration finalReaderConfig = fillPluginConfigWithNacos(readerConfig);

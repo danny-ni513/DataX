@@ -214,6 +214,10 @@ public class CoreConstant {
 	public final static String QUERY_SQL = "querySql";
 	public final static String JOB_CONTENT_0_WRITER_PARAMETER_PRE_SQL = "job.content[0].writer.parameter.preSql";
 	public final static String JOB_CONTENT_0_WRITER_PARAMETER_POST_SQL = "job.content[0].writer.parameter.postSql";
+	public final static String JOB_CONTENT_0_WRITER_PARAMETER_COLUMN = "job.content[0].writer.parameter.column";
+
+	public final static String TYPE = "type";
+	public final static String VALUE = "value";
 
 	public final static String NACOS_CONFIG = "nacosConfig"; //"hbaseProd"
 
@@ -224,5 +228,13 @@ public class CoreConstant {
 
 	public final static String NUMBER_DOT = "\\.";
 	public final static String STRING_DOT = ".";
+
+	public final static String CONST = "const";
+	public final static String CONST_DATE = "const_date";
+	public final static String WHERE_CONST = "where_const";
+	public final static String WHERE_CONST_DATE = "where_const_date";
+
+
+
 
 }
