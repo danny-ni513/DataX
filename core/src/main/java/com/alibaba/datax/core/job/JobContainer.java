@@ -1185,7 +1185,7 @@ public class JobContainer extends AbstractContainer {
                                 if(columnMap.get(CoreConstant.VALUE)!=null){
                                     if(columnMap.get(CoreConstant.VALUE) instanceof String){
                                         String value = (String)columnMap.get(CoreConstant.VALUE);
-                                        if(value.startsWith("[IDM_ID.")&&value.endsWith("]")){
+                                        if(value.startsWith("[IDM_PARA.")&&value.endsWith("]")){
                                             /** 转换 */
                                             Object paraValue = this.getIdmParaValue(idmParaUrl,value);
                                             columnMap.put(CoreConstant.VALUE,paraValue);
