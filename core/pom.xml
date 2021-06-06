@@ -56,6 +56,15 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
         </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>com.github.danielwegener</groupId>-->
+<!--            <artifactId>logback-kafka-appender</artifactId>-->
+<!--        </dependency>-->
+        <dependency>
+            <groupId>com.github.ptgoetz</groupId>
+            <artifactId>logback-kafka</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.codehaus.janino</groupId>
             <artifactId>janino</artifactId>

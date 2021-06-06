@@ -34,6 +34,20 @@
         </encoder>
     </appender>
 
+    <appender name="kafkaAppender" class="com.github.danielwegener.logback.kafka.KafkaAppender">
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+        <topic>logs</topic>
+        <keyingStrategy class="com.github.danielwegener.logback.kafka.keying.NoKeyKeyingStrategy" />
+        <deliveryStrategy class="com.github.danielwegener.logback.kafka.delivery.AsynchronousDeliveryStrategy" />
+
+        <producerConfig>bootstrap.servers=localhost:9092</producerConfig>
+
+        <!-- this is the fallback appender if kafka is not available. -->
+        <appender-ref ref="STDOUT" />
+    </appender>
+
     <!-- 按照每天生成日志文件(对 DataX 不适应，DataX 是一个进程一个日志) -->
     <!--
     <appender name="FILE"
@@ -135,6 +149,9 @@
 
     <logger name="com.alibaba.datax.common.statistics.PerfRecord"  level="INFO" additivity="false">
         <appender-ref ref="PERF" />
+    </logger>
+    <logger name="com.alibaba.datax.core.job.JobContainer" level="ERROR">
+        <appender-ref ref="kafkaAppender" />
     </logger>
 
     <root level="${loglevel:-INFO}">

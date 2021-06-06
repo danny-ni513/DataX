@@ -186,4 +186,13 @@ public class CoreConstant {
 	public static String DATAX_STORAGE_PLUGIN_WRITER_HOME = StringUtils.join(
 			new String[] { DATAX_HOME, "local_storage", "plugin","writer" }, File.separator);
 
+
+	public final static String JOB_NOTICE_ID = "job.noticeId";
+
+	public final static String JOB_NAME = "job.name";
+
+	public final static String JOB_NOTICE_TYPE_INIT_ERROR = "DATAX-INIT-ERROR";
+	public final static String JOB_NOTICE_TYPE_START = "DATAX-START";
+	public final static String JOB_NOTICE_TYPE_FINISH = "DATAX-FINISH";
+
 }

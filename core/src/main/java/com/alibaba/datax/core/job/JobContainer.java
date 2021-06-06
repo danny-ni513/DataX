@@ -35,7 +35,9 @@ import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jingxing on 14-8-24.
@@ -96,6 +98,10 @@ public class JobContainer extends AbstractContainer {
     public void start() {
         LOG.info("DataX jobContainer starts job.");
 
+        sendNoticeMsg(new HashMap(){{
+            put("type", CoreConstant.JOB_NOTICE_TYPE_START);
+        }});
+
         boolean hasException = false;
         boolean isDryRun = false;
         try {
@@ -129,6 +135,10 @@ public class JobContainer extends AbstractContainer {
         } catch (Throwable e) {
             LOG.error("Exception when job run", e);
 
+            sendNoticeMsg(new HashMap<String,String>(){{
+                put("type", CoreConstant.JOB_NOTICE_TYPE_INIT_ERROR);
+                put("msg","Exception when job run");
+            }});
             hasException = true;
 
             if (e instanceof OutOfMemoryError) {
@@ -167,6 +177,9 @@ public class JobContainer extends AbstractContainer {
                 this.destroy();
                 this.endTimeStamp = System.currentTimeMillis();
                 if (!hasException) {
+                    //先打印任务统计结果
+                    this.logStatistics();
+
                     //最后打印cpu的平均消耗，GC的统计
                     VMInfo vmInfo = VMInfo.getVmInfo();
                     if (vmInfo != null) {
@@ -175,7 +188,21 @@ public class JobContainer extends AbstractContainer {
                     }
 
                     LOG.info(PerfTrace.getInstance().summarizeNoException());
-                    this.logStatistics();
+                    int waitDestroy = 0;
+                    for(int i=0;i<10*10000;i++){
+                        if(i%10000 == 0){
+                            waitDestroy++;
+                            LOG.info("回收等待--->{}",waitDestroy);
+                        }
+                    }
+
+                    try{
+                        Thread.sleep(1*1000);
+
+                    }catch (Exception exception){
+                        LOG.error("sleep error");
+                    }
+
                 }
             }
         }
@@ -427,7 +454,7 @@ public class JobContainer extends AbstractContainer {
             Long channelLimitedByteSpeed = this.configuration
                     .getLong(CoreConstant.DATAX_CORE_TRANSPORT_CHANNEL_SPEED_BYTE);
             if (channelLimitedByteSpeed == null || channelLimitedByteSpeed <= 0) {
-                DataXException.asDataXException(
+                throw DataXException.asDataXException(
                         FrameworkErrorCode.CONFIG_ERROR,
                         "在有总bps限速条件下，单个channel的bps值不能为空，也不能为非正数");
             }
@@ -448,7 +475,7 @@ public class JobContainer extends AbstractContainer {
             Long channelLimitedRecordSpeed = this.configuration.getLong(
                     CoreConstant.DATAX_CORE_TRANSPORT_CHANNEL_SPEED_RECORD);
             if (channelLimitedRecordSpeed == null || channelLimitedRecordSpeed <= 0) {
-                DataXException.asDataXException(FrameworkErrorCode.CONFIG_ERROR,
+                throw DataXException.asDataXException(FrameworkErrorCode.CONFIG_ERROR,
                         "在有总tps限速条件下，单个channel的tps值不能为空，也不能为非正数");
             }
 
@@ -626,6 +653,17 @@ public class JobContainer extends AbstractContainer {
                 "读写失败总数",
                 String.valueOf(CommunicationTool.getTotalErrorRecords(communication))
         ));
+
+        sendNoticeMsg(new HashMap<String,String>(){{
+            put("type", CoreConstant.JOB_NOTICE_TYPE_FINISH);
+            put("start_timestamp",dateFormat.format(startTimeStamp));
+            put("end_timestamp",dateFormat.format(endTimeStamp));
+            put("total_costs",totalCosts+"");
+            put("byte_speed_per_second",byteSpeedPerSecond+"");
+            put("record_speed_pre_second",recordSpeedPerSecond+"");
+            put("total_read_record_num",CommunicationTool.getTotalReadRecords(communication)+"");
+            put("total_write_fail_record_num",CommunicationTool.getTotalErrorRecords(communication)+"");
+        }});
 
         if (communication.getLongCounter(CommunicationTool.TRANSFORMER_SUCCEED_RECORDS) > 0
                 || communication.getLongCounter(CommunicationTool.TRANSFORMER_FAILED_RECORDS) > 0
@@ -972,5 +1010,17 @@ public class JobContainer extends AbstractContainer {
         Communication comm = super.getContainerCommunicator().collect();
         HookInvoker invoker = new HookInvoker(CoreConstant.DATAX_HOME + "/hook", configuration, comm.getCounter());
         invoker.invokeAll();
+    }
+
+    private void sendNoticeMsg(Map map){
+        String noticeId=this.configuration.getString(CoreConstant.JOB_NOTICE_ID);
+        if(StringUtils.isNotBlank(noticeId)){
+            String jobName = this.configuration.getString(CoreConstant.JOB_NAME);
+            map.put("notice_id",noticeId);
+            map.put("job_name",jobName);
+            map.put("now_timestamp",System.currentTimeMillis());
+            String jsonInfo = JSON.toJSONString(map);
+            LOG.error(jsonInfo);
+        }
     }
 }
